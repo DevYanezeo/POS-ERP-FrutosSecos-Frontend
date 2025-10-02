@@ -61,8 +61,9 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
+    const token = localStorage.getItem("token")
     const isAuthenticated = localStorage.getItem("isAuthenticated")
-    if (!isAuthenticated) {
+    if (!token || !isAuthenticated) {
       router.push("/login")
     }
   }, [router])
@@ -75,8 +76,19 @@ export default function DashboardPage() {
     setCartTotal(total)
   }, [cart])
 
+  const clearAuth = () => {
+    try {
+      localStorage.removeItem("isAuthenticated")
+      localStorage.removeItem("token")
+      localStorage.removeItem("user_email")
+      localStorage.removeItem("user_nombre")
+      localStorage.removeItem("user_rol")
+    } catch (e) {
+    }
+  }
+
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
+    clearAuth()
     router.push("/login")
   }
 
