@@ -17,6 +17,11 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    if (!email || !password) {
+      setError('Por favor completa correo y contraseña')
+      setLoading(false)
+      return
+    }
     try {
       const resp = await login({ email, password })
       localStorage.setItem('token', resp.token)
@@ -26,7 +31,8 @@ export default function LoginPage() {
       localStorage.setItem('isAuthenticated', 'true')
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err?.message || 'Error de autenticación')
+      const msg = err?.message || err?.error || 'Error de autenticación'
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -76,7 +82,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="Correo electrónico"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (error) setError(null) }}
                   className="w-full px-4 py-4 border border-[#F5EDE4] rounded-lg text-[#2E2A26] placeholder-[#7A6F66] focus:outline-none focus:ring-2 focus:ring-[#A0522D] focus:border-transparent bg-[#FDFCF9]"
                   required
                 />
@@ -87,7 +93,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="Contraseña"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (error) setError(null) }}
                   className="w-full px-4 py-4 border border-[#F5EDE4] rounded-lg text-[#2E2A26] placeholder-[#7A6F66] focus:outline-none focus:ring-2 focus:ring-[#A0522D] focus:border-transparent bg-[#FDFCF9]"
                   required
                 />
@@ -95,10 +101,23 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-[#A0522D] hover:bg-[#8B5E3C] text-[#FFFFFF] py-4 rounded-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+                disabled={loading}
+                className={`w-full bg-[#A0522D] hover:bg-[#8B5E3C] text-[#FFFFFF] py-4 rounded-lg font-semibold transition-colors shadow-sm hover:shadow-md flex items-center justify-center ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                Iniciar Sesión
+                {loading ? (
+                  <svg className="animate-spin h-5 w-5 text-white mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                ) : null}
+                {loading ? 'Iniciando...' : 'Iniciar Sesión'}
               </button>
+
+              {error && (
+                <div className="mt-3 p-3 rounded-md bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-sm">
+                  {error}
+                </div>
+              )}
 
               <div className="text-center">
                 <a href="#" className="text-[#7A6F66] text-sm hover:text-[#A0522D] transition-colors">

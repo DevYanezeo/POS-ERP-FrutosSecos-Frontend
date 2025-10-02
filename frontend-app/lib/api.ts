@@ -20,7 +20,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   })
 
   if (!res.ok) {
-    throw new Error('Invalid credentials')
+    throw new Error('Credenciales inválidas, intentelo nuevamente')
   }
 
   return res.json()
