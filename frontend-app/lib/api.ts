@@ -26,6 +26,30 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return res.json()
 }
 
+export type RegisterPayload = {
+  nombre: string
+  email: string
+  password: string
+  rol: string
+  rut: string
+  telefono: string
+}
+
+export async function register(payload: RegisterPayload): Promise<LoginResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(txt || 'Error al registrar usuario')
+  }
+
+  return res.json()
+}
+
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const headers: Record<string,string> = { 'Content-Type': 'application/json' }
