@@ -5,12 +5,14 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { login } from "../../lib/api"
+import RegisterForm from '../../components/RegisterForm'
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showRegister, setShowRegister] = useState(false)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -74,9 +76,11 @@ export default function LoginPage() {
           </div>
 
           <div className="max-w-sm mx-auto w-full">
-            <h1 className="text-3xl font-bold text-[#2E2A26] mb-8 text-center">Bienvenido</h1>
+            {!showRegister ? (
+              <>
+                <h1 className="text-3xl font-bold text-[#2E2A26] mb-8 text-center">Bienvenido</h1>
 
-            <form onSubmit={handleLogin} className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <input
                   type="email"
@@ -120,11 +124,15 @@ export default function LoginPage() {
               )}
 
               <div className="text-center">
-                <a href="#" className="text-[#7A6F66] text-sm hover:text-[#A0522D] transition-colors">
-                  ¿Olvidaste tu contraseña?
+                <a href="#" onClick={(e) => { e.preventDefault(); setShowRegister(true) }} className="text-[#7A6F66] text-sm hover:text-[#A0522D] transition-colors">
+                  ¿No tienes cuenta? Crear cuenta
                 </a>
               </div>
-            </form>
+                </form>
+              </>
+            ) : (
+              <RegisterForm onCancel={() => setShowRegister(false)} />
+            )}
           </div>
         </div>
       </div>
