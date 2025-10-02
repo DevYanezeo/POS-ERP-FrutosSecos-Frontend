@@ -4,22 +4,37 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { login } from "../../lib/api"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.setItem("isAuthenticated", "true")
-    router.push("/dashboard")
+    setLoading(true)
+    setError(null)
+    try {
+      const resp = await login({ email, password })
+      localStorage.setItem('token', resp.token)
+      localStorage.setItem('user_email', resp.email)
+      localStorage.setItem('user_nombre', resp.nombre || '')
+      localStorage.setItem('user_rol', resp.rol || '')
+      localStorage.setItem('isAuthenticated', 'true')
+      router.push('/dashboard')
+    } catch (err: any) {
+      setError(err?.message || 'Error de autenticación')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#8B5E3C] flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-[#FDFCF9] rounded-xl overflow-hidden shadow-2xl flex border border-[#F5EDE4]">
-        {/* Left side - Nuts background */}
         <div
           className="flex-1 bg-cover bg-center relative"
           style={{
