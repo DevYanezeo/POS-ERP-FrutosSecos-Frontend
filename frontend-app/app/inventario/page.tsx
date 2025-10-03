@@ -4,6 +4,16 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Plus } from "lucide-react"
 import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 export default function InventarioPage() {
   
@@ -15,6 +25,8 @@ export default function InventarioPage() {
   const [search, setSearch] = useState('')
 
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showDetail, setShowDetail] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [nombre, setNombre] = useState("")
   const [categoria, setCategoria] = useState("Frutos secos")
   const [precio, setPrecio] = useState<number | ''>("")
@@ -29,7 +41,7 @@ export default function InventarioPage() {
     price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
     unit: p.unidad || '',
     stock: `${p.stock ?? 0} unidades`,
-    image: p.imagen || '/pile-of-almonds.png',
+    image: p.imagen || '/imagenes-productos/Almendras Orgánica.png',
     raw: p,
   }))
 
@@ -149,7 +161,7 @@ export default function InventarioPage() {
                   <p className="text-[#A0522D] font-bold text-sm mb-1">{product.price}</p>
                   <p className="text-[#7A6F66] text-xs mb-2">{product.unit} • {product.stock}</p>
                   <div className="flex gap-2 mt-3 flex-wrap">
-                    <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); alert(JSON.stringify(detalle, null, 2)) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1 bg-[#6B7280] hover:bg-[#4B5563] text-white rounded-md text-xs">Ver</button>
+                    <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1 bg-[#6B7280] hover:bg-[#4B5563] text-white rounded-md text-xs">Ver</button>
                     <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); const nuevoNombre = prompt('Nombre', detalle?.nombre || detalle?.name || product.name); if (nuevoNombre === null) return; const nuevoPrecioStr = prompt('Precio (número)', String(detalle?.precio ?? '')); if (nuevoPrecioStr === null) return; const nuevoUnidad = prompt('Unidad', detalle?.unidad || product.unit) ?? ''; const nuevaCategoria = prompt('Categoría', detalle?.categoria || product.category) ?? ''; const nuevoStockStr = prompt('Stock', String(detalle?.stock ?? (product.raw?.stock ?? '0'))); if (nuevoStockStr === null) return; const payload:any = { nombre: nuevoNombre, precio: Number(nuevoPrecioStr||0), unidad: nuevoUnidad, categoria: nuevaCategoria, stock: Number(nuevoStockStr||0)}; await updateProducto(id,payload); await fetchProductos(); alert('Producto actualizado') } catch(e:any){ alert(e?.message || 'Error actualizando producto') } }} className="px-3 py-1 bg-[#10B981] hover:bg-[#059669] text-white rounded-md text-xs">Editar</button>
                     <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const cantidadStr = prompt('Cantidad a agregar (número)','1'); if (!cantidadStr) return; const cantidad = Number(cantidadStr); if (isNaN(cantidad)||cantidad<=0) return alert('Cantidad inválida'); await agregarStock(id,cantidad); await fetchProductos(); alert('Stock agregado') } catch(e:any){ alert(e?.message || 'Error agregando stock') } }} className="px-3 py-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-md text-xs">Agregar stock</button>
                     <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const cantidadStr = prompt('Cantidad a quitar (número)','1'); if (!cantidadStr) return; const cantidad = Number(cantidadStr); if (isNaN(cantidad)||cantidad<=0) return alert('Cantidad inválida'); if(!confirm(`Quitar ${cantidad} unidades de ${product.name}?`)) return; await quitarStock(id,cantidad); await fetchProductos(); alert('Stock actualizado') } catch(e:any){ alert(e?.message || 'Error quitando stock') } }} className="px-3 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-md text-xs">Quitar stock</button>
@@ -184,7 +196,7 @@ export default function InventarioPage() {
                       <td className="px-4 py-3 text-sm">{p.stock}</td>
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); alert(JSON.stringify(detalle, null,2)) } catch(e:any){ alert(e?.message || 'Error') } }} className="px-2 py-1 bg-[#6B7280] text-white rounded text-xs">Ver</button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} className="px-2 py-1 bg-[#6B7280] text-white rounded text-xs">Ver</button>
                           <button onClick={async () => { try { const id = p.raw?.idProducto || p.id; const nuevo = prompt('Nombre', p.name); if (!nuevo) return; await updateProducto(id, { nombre: nuevo }); await fetchProductos(); alert('Actualizado') } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-[#10B981] text-white rounded text-xs">Editar</button>
                           <button onClick={async () => { try { const id = p.raw?.idProducto || p.id; const c = Number(prompt('Cantidad a agregar','1')); if (!c) return; await agregarStock(id,c); await fetchProductos(); alert('Stock agregado') } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-[#3B82F6] text-white rounded text-xs">Agregar stock</button>
                           <button onClick={async () => { try { const id = p.raw?.idProducto || p.id; const c = Number(prompt('Cantidad a quitar','1')); if (!c) return; await quitarStock(id,c); await fetchProductos(); alert('Stock actualizado') } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-[#F59E0B] text-white rounded text-xs">Quitar stock</button>
@@ -197,6 +209,75 @@ export default function InventarioPage() {
               </table>
             </div>
           )}
+
+          <Dialog open={showDetail} onOpenChange={(open) => { if (!open) setSelectedProduct(null); setShowDetail(open) }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Detalle del Producto</DialogTitle>
+                <DialogDescription>Información detallada del producto</DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-2 space-y-2">
+                {selectedProduct ? (
+                  <div>
+                    <div className="flex gap-4">
+                      <div className="w-24 h-24 bg-[#F3F2F1] rounded overflow-hidden">
+                        <img src={selectedProduct.imagen || '/imagenes-productos/Almendras Orgánica.png'} alt={selectedProduct.nombre || selectedProduct.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold">{selectedProduct.nombre || selectedProduct.name}</div>
+                        <div className="text-sm text-[#A0522D]">Precio: CLP ${selectedProduct.precio ?? selectedProduct.price}</div>
+                        <div className="text-sm text-[#7A6F66]">Unidad: {selectedProduct.unidad || selectedProduct.unit}</div>
+                        <div className="text-sm text-[#7A6F66]">Stock: {selectedProduct.stock ?? selectedProduct.stockActual ?? (selectedProduct.cantidad ?? '0')}</div>
+                      </div>
+                    </div>
+                    {selectedProduct.descripcion && <p className="mt-3 text-sm">{selectedProduct.descripcion}</p>}
+
+                    <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">ID</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.idProducto ?? selectedProduct.id ?? '-'}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Código</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.codigo ?? '-'}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Categoría ID</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.categoriaId ?? selectedProduct.categoria ?? '-'}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Precio</span>
+                        <span className="text-sm text-[#2E2A26]">CLP ${String(selectedProduct.precio ?? selectedProduct.price ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Unidad</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.unidad ?? selectedProduct.unit ?? '-'}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Stock</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.stock ?? selectedProduct.cantidad ?? 0}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Estado</span>
+                        <span className="text-sm text-[#2E2A26]">{typeof selectedProduct.estado !== 'undefined' ? (selectedProduct.estado ? 'Activo' : 'Inactivo') : '-'}</span>
+                      </div>
+                      <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
+                        <span className="text-sm text-[#7A6F66]">Vencimiento</span>
+                        <span className="text-sm text-[#2E2A26]">{selectedProduct.fechaVencimiento ?? selectedProduct.fecha_vencimiento ?? '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>Cargando...</div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <DialogClose className="px-3 py-2 bg-white border rounded">Cerrar</DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
