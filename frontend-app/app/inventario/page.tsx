@@ -1,9 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Plus } from "lucide-react"
+import { Plus, ArrowLeft } from "lucide-react"
 import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
 import ViewProductDialog from "./components/ViewProductDialog"
 import EditProductDialog from "./components/EditProductDialog"
 import AddStockDialog from "./components/AddStockDialog"
@@ -88,9 +98,19 @@ export default function InventarioPage() {
     }
   }
 
+  const router = useRouter()
+
   return (
     <div className="min-h-screen p-6 bg-[#F9F6F3]">
-      <h1 className="text-3xl font-bold mb-6">Inventario</h1>
+      <div className="mb-6">
+        <button 
+          onClick={() => router.push('/dashboard')} 
+          className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 border border-[#F5EDE4] rounded text-sm text-[#7A6F66] hover:text-[#A0522D] transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver al Dashboard
+        </button>
+      </div>
 
       {/* Toolbar */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -108,13 +128,58 @@ export default function InventarioPage() {
           <button className="px-3 py-2 bg-[#7A6F66] hover:bg-[#6B635C] text-white rounded text-sm">Filtrar</button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={() => setViewMode('grid')} className={`px-3 py-2 rounded text-sm ${viewMode === 'grid' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Grid</button>
-          <button onClick={() => setViewMode('table')} className={`px-3 py-2 rounded text-sm ${viewMode === 'table' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Tabla</button>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[#2E2A26]">Inventario</h1>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setViewMode('grid')} className={`px-3 py-2 rounded text-sm ${viewMode === 'grid' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Grid</button>
+            <button onClick={() => setViewMode('table')} className={`px-3 py-2 rounded text-sm ${viewMode === 'table' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Tabla</button>
+          </div>
         </div>
       </div>
 
-      {showAddForm && (
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Agregar Producto</DialogTitle>
+            <DialogDescription>Complete la información del nuevo producto</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div>
+              <label className="text-sm text-[#7A6F66] mb-1 block">Nombre</label>
+              <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" className="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label className="text-sm text-[#7A6F66] mb-1 block">Categoría</label>
+              <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
+                <option>Frutos secos</option>
+                <option>Cereales</option>
+                <option>Legumbres</option>
+                <option>Semillas</option>
+                <option>Endulzantes</option>
+                <option>Especias</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-[#7A6F66] mb-1 block">Precio</label>
+              <input value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Precio" type="number" className="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label className="text-sm text-[#7A6F66] mb-1 block">Unidad</label>
+              <input value={unidad} onChange={(e) => setUnidad(e.target.value)} placeholder="ej: kg, gr, lt" className="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label className="text-sm text-[#7A6F66] mb-1 block">Stock</label>
+              <input value={stockVal} onChange={(e) => setStockVal(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Cantidad" type="number" className="w-full px-3 py-2 border rounded" />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66]">Cancelar</DialogClose>
+            <button disabled={adding} onClick={handleAdd} className="px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded disabled:opacity-50">{adding ? 'Agregando...' : 'Agregar'}</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {showAddForm && false && (
         <div className="mb-6 p-4 bg-white rounded-lg border border-[#F5EDE4] shadow-sm">
           <h3 className="font-semibold mb-3">Agregar Producto</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
