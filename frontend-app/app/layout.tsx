@@ -6,9 +6,9 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'MSM — Mil Sabores Manager',
+  description: 'MSM - Sistema de gestión de inventario Mil Sabores Manager',
+  generator: 'MSM',
 }
 
 export default function RootLayout({
@@ -18,6 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: `
+          body:has([data-page="login"]) header { display: none !important; }
+        ` }} />
+      </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Navbar />
         <main>{children}</main>

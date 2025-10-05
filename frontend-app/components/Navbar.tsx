@@ -1,9 +1,17 @@
 "use client"
 
 import Image from 'next/image'
-import { User } from 'lucide-react'
+import { User, LogOut } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import StockAlert from '@/app/dashboard/components/StockAlert'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export default function Navbar() {
   const router = useRouter()
@@ -12,6 +20,15 @@ export default function Navbar() {
   const isInicio = pathname === '/' || pathname === '/dashboard'
   const isInventario = pathname?.startsWith('/inventario')
 
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user_email')
+    localStorage.removeItem('user_nombre')
+    localStorage.removeItem('user_rol')
+    localStorage.removeItem('isAuthenticated')
+    router.push('/login')
+  }
+
   return (
     <header className="border-b bg-[#FBF7F4]">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
@@ -19,8 +36,8 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="logo" width={36} height={36} />
             <div>
-              <div className="text-sm font-bold">FRUTOS SECOS</div>
-              <div className="text-xs text-muted-foreground">MIL SABORES</div>
+              <div className="text-sm font-bold">MSM</div>
+              <div className="text-xs text-muted-foreground">Mil Sabores Manager</div>
             </div>
           </div>
 
@@ -32,7 +49,21 @@ export default function Navbar() {
 
         <div className="flex items-center gap-4">
           <StockAlert />
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white"><User className="w-4 h-4"/></div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
+                <User className="w-4 h-4"/>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
