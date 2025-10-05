@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { Plus, ArrowLeft } from "lucide-react"
+import { Plus } from "lucide-react"
 import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
 import {
   Dialog,
@@ -99,18 +99,27 @@ export default function InventarioPage() {
   }
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const viewId = searchParams.get('view')
+    if (!viewId) return
+    (async () => {
+      try {
+        const id = Number(viewId)
+        if (isNaN(id)) return
+        const detalle = await getProductoById(id)
+        setSelectedProduct(detalle)
+        setShowDetail(true)
+        router.push('/inventario')
+      } catch (e:any) {
+      }
+    })()
+  }, [searchParams])
 
   return (
     <div className="min-h-screen p-6 bg-[#F9F6F3]">
-      <div className="mb-6">
-        <button 
-          onClick={() => router.push('/dashboard')} 
-          className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 border border-[#F5EDE4] rounded text-sm text-[#7A6F66] hover:text-[#A0522D] transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al Dashboard
-        </button>
-      </div>
+      <div className="mb-6" />
 
       {/* Toolbar */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -214,14 +223,23 @@ export default function InventarioPage() {
         <>
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {productos.map((product) => (
-                <div key={product.id} className="bg-[#FFFFFF] rounded-xl p-4 shadow-sm border border-[#F5EDE4]">
+              {productos.map((product) => {
+                const stockNum = product.raw?.stock ?? 0
+                const isLowStock = stockNum <= 5
+                return (
+                <div key={product.id} className={`bg-[#FFFFFF] rounded-xl p-4 shadow-sm border ${isLowStock ? 'border-red-400 ring-2 ring-red-200' : 'border-[#F5EDE4]'}`}>
+                  {isLowStock && (
+                    <div className="mb-2 px-2 py-1 bg-red-100 border border-red-400 rounded text-xs font-semibold text-red-700 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                      Stock Bajo
+                    </div>
+                  )}
                   <div className="mb-3">
                     <Image src={product.image} alt={product.name} width={100} height={100} className="object-cover rounded-lg" />
                   </div>
                   <h3 className="text-[#2E2A26] font-semibold text-sm mb-1">{product.name}</h3>
                   <p className="text-[#A0522D] font-bold text-sm mb-1">{product.price}</p>
-                  <p className="text-[#7A6F66] text-xs mb-2">{product.unit} • {product.stock}</p>
+                  <p className={`text-xs mb-2 ${isLowStock ? 'text-red-600 font-semibold' : 'text-[#7A6F66]'}`}>{product.unit} • {product.stock}</p>
                   <div className="flex gap-2 mt-3 flex-wrap">
                     <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm">Ver</button>
                     <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm">Editar</button>
@@ -230,7 +248,8 @@ export default function InventarioPage() {
                     <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm">Eliminar</button>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="bg-white rounded shadow-sm border border-[#F5EDE4] overflow-auto">
@@ -249,13 +268,23 @@ export default function InventarioPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y">
-                  {productos.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#FEF9F6]">
+                  {productos.map((p) => {
+                    const stockNum = p.raw?.stock ?? 0
+                    const isLowStock = stockNum <= 5
+                    return (
+                    <tr key={p.id} className={`hover:bg-[#FEF9F6] ${isLowStock ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-3 text-sm">{p.name}</td>
                       <td className="px-4 py-3 text-sm">{p.category}</td>
                       <td className="px-4 py-3 text-sm">{p.price}</td>
                       <td className="px-4 py-3 text-sm">{p.unit}</td>
-                      <td className="px-4 py-3 text-sm">{p.stock}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={isLowStock ? 'text-red-600 font-semibold' : ''}>{p.stock}</span>
+                          {isLowStock && (
+                            <span className="px-2 py-0.5 bg-red-100 border border-red-400 rounded text-xs font-semibold text-red-700">Stock Bajo</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
                           <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm">Ver</button>
@@ -266,7 +295,8 @@ export default function InventarioPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

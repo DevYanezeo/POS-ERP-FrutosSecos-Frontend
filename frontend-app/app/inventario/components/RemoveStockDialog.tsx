@@ -26,16 +26,17 @@ export default function RemoveStockDialog({
   onSuccess,
   onRemoveStock 
 }: RemoveStockDialogProps) {
-  const [stockToRemove, setStockToRemove] = useState<number>(1)
+  const [stockToRemove, setStockToRemove] = useState<string>('1')
   const [processing, setProcessing] = useState(false)
 
   const handleRemove = async () => {
-    if (!stockToRemove || stockToRemove <= 0) return alert('La cantidad debe ser mayor a 0')
-    if (stockToRemove > (product?.stock ?? 0)) return alert('No puedes quitar más del stock disponible')
+    const cantidad = Number(stockToRemove || '0')
+    if (!cantidad || cantidad <= 0) return alert('La cantidad debe ser mayor a 0')
+    if (cantidad > (product?.stock ?? 0)) return alert('No puedes quitar más del stock disponible')
     setProcessing(true)
     try {
       const id = product?.idProducto || product?.id
-      await onRemoveStock(id, stockToRemove)
+      await onRemoveStock(id, cantidad)
       onSuccess()
       onOpenChange(false)
       alert('Stock actualizado exitosamente')
@@ -68,13 +69,17 @@ export default function RemoveStockDialog({
               type="number" 
               min={1} 
               value={stockToRemove} 
-              onChange={(e) => setStockToRemove(Number(e.target.value))} 
+              onChange={(e) => {
+                const raw = e.target.value
+                const normalized = raw.replace(/^0+(?=\d)/, '')
+                setStockToRemove(normalized)
+              }} 
               className="w-full px-3 py-2 border rounded" 
             />
           </div>
           <div className="bg-[#FEF3C7] p-3 rounded">
-            <div className="text-sm text-[#92400E]">
-              Nuevo stock será: <span className="font-bold">{Math.max(0, (product?.stock ?? 0) - stockToRemove)} unidades</span>
+              <div className="text-sm text-[#92400E]">
+              Nuevo stock será: <span className="font-bold">{Math.max(0, (product?.stock ?? 0) - Number(stockToRemove || '0'))} unidades</span>
             </div>
           </div>
         </div>
