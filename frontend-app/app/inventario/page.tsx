@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { Plus, ArrowLeft } from "lucide-react"
+import { Plus } from "lucide-react"
 import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
 import {
   Dialog,
@@ -119,15 +119,7 @@ export default function InventarioPage() {
 
   return (
     <div className="min-h-screen p-6 bg-[#F9F6F3]">
-      <div className="mb-6">
-        <button 
-          onClick={() => router.push('/dashboard')} 
-          className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 border border-[#F5EDE4] rounded text-sm text-[#7A6F66] hover:text-[#A0522D] transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al Dashboard
-        </button>
-      </div>
+      <div className="mb-6" />
 
       {/* Toolbar */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

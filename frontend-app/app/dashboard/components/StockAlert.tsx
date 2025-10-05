@@ -73,7 +73,6 @@ export default function StockAlert() {
                       <div className="text-xs text-muted-foreground">{p.stock} unidades</div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => { setOpen(false); router.push(`/inventario`); }} className="px-2 py-1 text-xs bg-[#F5EDE4] rounded">Ir a Inventario</button>
                       <button onClick={() => { setOpen(false); router.push(`/inventario?view=${p.idProducto}`); }} className="px-2 py-1 text-xs bg-[#A0522D] text-white rounded">Ver</button>
                     </div>
                   </li>
