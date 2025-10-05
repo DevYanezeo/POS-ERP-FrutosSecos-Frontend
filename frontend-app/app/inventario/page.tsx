@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Plus, ArrowLeft } from "lucide-react"
 import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
@@ -99,6 +99,23 @@ export default function InventarioPage() {
   }
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const viewId = searchParams.get('view')
+    if (!viewId) return
+    (async () => {
+      try {
+        const id = Number(viewId)
+        if (isNaN(id)) return
+        const detalle = await getProductoById(id)
+        setSelectedProduct(detalle)
+        setShowDetail(true)
+        router.push('/inventario')
+      } catch (e:any) {
+      }
+    })()
+  }, [searchParams])
 
   return (
     <div className="min-h-screen p-6 bg-[#F9F6F3]">
