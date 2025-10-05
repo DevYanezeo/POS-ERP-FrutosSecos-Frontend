@@ -26,15 +26,16 @@ export default function AddStockDialog({
   onSuccess,
   onAddStock 
 }: AddStockDialogProps) {
-  const [stockToAdd, setStockToAdd] = useState<number>(1)
+  const [stockToAdd, setStockToAdd] = useState<string>('1')
   const [processing, setProcessing] = useState(false)
 
   const handleAdd = async () => {
-    if (!stockToAdd || stockToAdd <= 0) return alert('La cantidad debe ser mayor a 0')
+    const cantidad = Number(stockToAdd || '0')
+    if (!cantidad || cantidad <= 0) return alert('La cantidad debe ser mayor a 0')
     setProcessing(true)
     try {
       const id = product?.idProducto || product?.id
-      await onAddStock(id, stockToAdd)
+      await onAddStock(id, cantidad)
       onSuccess()
       onOpenChange(false)
       alert('Stock agregado exitosamente')
@@ -67,13 +68,17 @@ export default function AddStockDialog({
               type="number" 
               min={1} 
               value={stockToAdd} 
-              onChange={(e) => setStockToAdd(Number(e.target.value))} 
+              onChange={(e) => {
+                const raw = e.target.value
+                const normalized = raw.replace(/^0+(?=\d)/, '')
+                setStockToAdd(normalized)
+              }} 
               className="w-full px-3 py-2 border rounded" 
             />
           </div>
           <div className="bg-[#E0F2FE] p-3 rounded">
-            <div className="text-sm text-[#0369A1]">
-              Nuevo stock será: <span className="font-bold">{(product?.stock ?? 0) + stockToAdd} unidades</span>
+              <div className="text-sm text-[#0369A1]">
+              Nuevo stock será: <span className="font-bold">{(product?.stock ?? 0) + (Number(stockToAdd || '0'))} unidades</span>
             </div>
           </div>
         </div>
