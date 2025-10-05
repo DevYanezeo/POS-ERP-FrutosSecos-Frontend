@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { User } from "lucide-react"
+import StockAlert from "./components/StockAlert"
 import Image from "next/image"
 
 export default function DashboardPage() {
@@ -22,6 +23,7 @@ export default function DashboardPage() {
             <h1 className="font-bold">FRUTOS SECOS</h1>
           </div>
           <div className="flex items-center gap-3">
+            <StockAlert />
             <button onClick={() => router.push('/inventario')} className="px-3 py-1 bg-blue-600 text-white rounded">Inventario</button>
             <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white"><User className="w-4 h-4"/></div>
           </div>
