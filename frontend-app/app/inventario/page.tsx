@@ -67,6 +67,20 @@ export default function InventarioPage() {
     }
   }
 
+  // safeUpdateProducto: obtiene el producto actual desde la API, mezcla los cambios
+  // y llama a updateProducto para evitar sobrescribir campos no enviados (ej. stock)
+  const safeUpdateProducto = async (id: number, changes: any) => {
+    try {
+      // obtener estado actual del producto
+      const current = await getProductoById(id)
+      // mezclar: los cambios prevalecen, pero preservamos campos no enviados
+      const merged = { ...current, ...changes }
+      await updateProducto(id, merged)
+    } catch (e:any) {
+      throw e
+    }
+  }
+
   useEffect(() => { fetchProductos() }, [])
 
   const onBuscar = async () => {
@@ -313,7 +327,7 @@ export default function InventarioPage() {
             onOpenChange={setShowEditDialog}
             product={selectedProduct}
             onSuccess={fetchProductos}
-            onUpdate={updateProducto}
+            onUpdate={safeUpdateProducto}
           />
 
           <AddStockDialog 
