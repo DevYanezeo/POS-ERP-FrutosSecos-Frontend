@@ -30,7 +30,7 @@ export type RegisterPayload = {
   nombre: string
   email: string
   password: string
-  rol: string
+  rol: 'ADMIN' | 'CAJERO'
   rut: string
   telefono: string
 }
