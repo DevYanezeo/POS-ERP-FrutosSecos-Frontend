@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { Plus } from "lucide-react"
-import { getProductos, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
+import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,7 @@ export default function InventarioPage() {
   const mapProductos = (data: any[]) => (data || []).map((p: any) => ({
     id: p.idProducto || p.id || 0,
     name: p.nombre || p.name || 'Sin nombre',
-    category: p.categoria || `ID:${p.categoriaId || ''}`,
+    category: p.nombreCategoria || p.categoria || (p.categoriaId ? `ID:${p.categoriaId}` : '-'),
     price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
     unit: p.unidad || '',
     stock: `${p.stock ?? 0} unidades`,
@@ -58,7 +58,7 @@ export default function InventarioPage() {
     setLoading(true)
     setProductosError(null)
     try {
-      const data = await getProductos()
+      const data = await getProductosConCategoria()
       setProductos(mapProductos(data))
     } catch (e: any) {
       setProductosError(e?.message || 'Error cargando productos')
@@ -124,9 +124,9 @@ export default function InventarioPage() {
       {/* Toolbar */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center bg-white rounded shadow-sm border border-[#F5EDE4] px-3 py-2 w-full md:w-80">
+            <div className="flex items-center bg-white rounded shadow-sm border border-[#F5EDE4] px-3 py-2 w-full md:w-80">
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar productos..." className="flex-1 outline-none text-sm" />
-                        <button onClick={onBuscar} className="ml-2 px-3 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white text-sm rounded">Buscar</button>
+                        <button onClick={onBuscar} className="ml-2 px-3 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white text-sm rounded flex items-center gap-2"><Search className="w-4 h-4" />Buscar</button>
           </div>
 
           <button onClick={() => setShowAddForm((s) => !s)} className="flex items-center gap-2 px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm">
@@ -134,14 +134,14 @@ export default function InventarioPage() {
             Agregar Producto
           </button>
 
-          <button className="px-3 py-2 bg-[#7A6F66] hover:bg-[#6B635C] text-white rounded text-sm">Filtrar</button>
+          <button className="px-3 py-2 bg-[#7A6F66] hover:bg-[#6B635C] text-white rounded text-sm flex items-center gap-2"><Sliders className="w-4 h-4" />Filtrar</button>
         </div>
 
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-[#2E2A26]">Inventario</h1>
           <div className="flex items-center gap-2">
-            <button onClick={() => setViewMode('grid')} className={`px-3 py-2 rounded text-sm ${viewMode === 'grid' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Grid</button>
-            <button onClick={() => setViewMode('table')} className={`px-3 py-2 rounded text-sm ${viewMode === 'table' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}>Tabla</button>
+            <button onClick={() => setViewMode('grid')} aria-label="Vista en cuadrícula" title="Vista en cuadrícula" className={`px-3 py-2 rounded text-sm flex items-center gap-2 ${viewMode === 'grid' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}><LayoutGrid className="w-4 h-4" />Grid</button>
+            <button onClick={() => setViewMode('table')} aria-label="Vista en tabla" title="Vista en tabla" className={`px-3 py-2 rounded text-sm flex items-center gap-2 ${viewMode === 'table' ? 'bg-[#A0522D] text-white' : 'bg-white border hover:bg-gray-50'}`}><List className="w-4 h-4" />Tabla</button>
           </div>
         </div>
       </div>
@@ -240,12 +240,12 @@ export default function InventarioPage() {
                   <h3 className="text-[#2E2A26] font-semibold text-sm mb-1">{product.name}</h3>
                   <p className="text-[#A0522D] font-bold text-sm mb-1">{product.price}</p>
                   <p className={`text-xs mb-2 ${isLowStock ? 'text-red-600 font-semibold' : 'text-[#7A6F66]'}`}>{product.unit} • {product.stock}</p>
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm">Ver</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm">Editar</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm">+ Stock</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm">- Stock</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm">Eliminar</button>
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                    <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><Eye className="w-4 h-4" />Ver</button>
+                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-2"><Edit className="w-4 h-4" />Editar</button>
+                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><PlusCircle className="w-4 h-4" />+ Stock</button>
+                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><MinusCircle className="w-4 h-4" />- Stock</button>
+                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><Trash2 className="w-4 h-4" />Eliminar</button>
                   </div>
                 </div>
                 )
@@ -287,11 +287,11 @@ export default function InventarioPage() {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm">Ver</button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm">Editar</button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm">+ Stock</button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm">- Stock</button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm">Eliminar</button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} aria-label={`Ver ${p.name}`} title={`Ver ${p.name}`} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><Eye className="w-4 h-4" /></button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Editar ${p.name}`} title={`Editar ${p.name}`} className="px-2 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-1"><Edit className="w-4 h-4" /></button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Agregar stock a ${p.name}`} title={`Agregar stock a ${p.name}`} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><PlusCircle className="w-4 h-4" /></button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Quitar stock a ${p.name}`} title={`Quitar stock a ${p.name}`} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><MinusCircle className="w-4 h-4" /></button>
+                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Eliminar ${p.name}`} title={`Eliminar ${p.name}`} className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>

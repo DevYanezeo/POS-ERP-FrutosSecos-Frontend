@@ -25,6 +25,11 @@ export async function getProductos() {
   return fetchWithAuth(`${API_BASE}/api/productos/all`)
 }
 
+export async function getProductosConCategoria() {
+  return fetchWithAuth(`${API_BASE}/api/productos/all-con-categoria`)
+}
+
+
 export async function getProductoById(id: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/${id}`)
 }
