@@ -50,7 +50,6 @@ export default function RegisterForm({ onCancel }: { onCancel: () => void }) {
           <label className="text-sm mb-1 block">Rol</label>
           <select value={rol} onChange={e => setRol(e.target.value)} className="w-full px-4 py-2 border rounded bg-white">
             <option value="ADMIN">ADMIN</option>
-            <option value="VENDEDOR">VENDEDOR</option>
             <option value="CAJERO">CAJERO</option>
           </select>
         </div>

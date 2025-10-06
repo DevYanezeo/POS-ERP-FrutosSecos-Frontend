@@ -42,6 +42,19 @@ export default function InventarioPage() {
   const [unidad, setUnidad] = useState("")
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const r = localStorage.getItem('user_rol') || null
+      setUserRole(r)
+    } catch (e) {
+      setUserRole(null)
+    }
+  }, [])
+
+  const isCajero = (userRole || '').toLowerCase().includes('cajero')
+  const canEditOrDelete = !isCajero
 
   const mapProductos = (data: any[]) => (data || []).map((p: any) => ({
     id: p.idProducto || p.id || 0,
@@ -256,10 +269,14 @@ export default function InventarioPage() {
                   <p className={`text-xs mb-2 ${isLowStock ? 'text-red-600 font-semibold' : 'text-[#7A6F66]'}`}>{product.unit} • {product.stock}</p>
                     <div className="flex gap-2 mt-3 flex-wrap">
                     <button onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><Eye className="w-4 h-4" />Ver</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-2"><Edit className="w-4 h-4" />Editar</button>
+                    {canEditOrDelete && (
+                      <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-2"><Edit className="w-4 h-4" />Editar</button>
+                    )}
                     <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><PlusCircle className="w-4 h-4" />+ Stock</button>
                     <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><MinusCircle className="w-4 h-4" />- Stock</button>
-                    <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><Trash2 className="w-4 h-4" />Eliminar</button>
+                    {canEditOrDelete && (
+                      <button onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-2"><Trash2 className="w-4 h-4" />Eliminar</button>
+                    )}
                   </div>
                 </div>
                 )
@@ -302,10 +319,19 @@ export default function InventarioPage() {
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2">
                           <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} aria-label={`Ver ${p.name}`} title={`Ver ${p.name}`} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><Eye className="w-4 h-4" /></button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Editar ${p.name}`} title={`Editar ${p.name}`} className="px-2 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-1"><Edit className="w-4 h-4" /></button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Agregar stock a ${p.name}`} title={`Agregar stock a ${p.name}`} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><PlusCircle className="w-4 h-4" /></button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Quitar stock a ${p.name}`} title={`Quitar stock a ${p.name}`} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><MinusCircle className="w-4 h-4" /></button>
-                          <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Eliminar ${p.name}`} title={`Eliminar ${p.name}`} className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><Trash2 className="w-4 h-4" /></button>
+                          {canEditOrDelete ? (
+                            <>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Editar ${p.name}`} title={`Editar ${p.name}`} className="px-2 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-xs font-medium shadow-sm flex items-center gap-1"><Edit className="w-4 h-4" /></button>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Agregar stock a ${p.name}`} title={`Agregar stock a ${p.name}`} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><PlusCircle className="w-4 h-4" /></button>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Quitar stock a ${p.name}`} title={`Quitar stock a ${p.name}`} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><MinusCircle className="w-4 h-4" /></button>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Eliminar ${p.name}`} title={`Eliminar ${p.name}`} className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><Trash2 className="w-4 h-4" /></button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Agregar stock a ${p.name}`} title={`Agregar stock a ${p.name}`} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><PlusCircle className="w-4 h-4" /></button>
+                              <button onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} aria-label={`Quitar stock a ${p.name}`} title={`Quitar stock a ${p.name}`} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 rounded text-xs font-medium shadow-sm flex items-center gap-1"><MinusCircle className="w-4 h-4" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
