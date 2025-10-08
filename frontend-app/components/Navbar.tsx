@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { User, LogOut } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import StockAlert from '@/app/dashboard/components/StockAlert'
+
 import {
   DropdownMenu,
   DropdownMenuContent,
