@@ -40,9 +40,9 @@ export default function ViewProductDialog({ open, onOpenChange, product }: ViewP
               <div>
                 <div className="text-lg font-semibold">{product.nombre || product.name}</div>
                 <div className="text-sm text-[#A0522D]">Precio: CLP ${product.precio ?? product.price}</div>
-                <div className="text-sm text-[#7A6F66]">Unidad: {product.unidad || product.unit}</div>
+                <div className="text-sm text-[#7A6F66]">Presentación: {product.unidad || product.unit}</div>
                 <div className="text-sm text-[#7A6F66]">
-                  Stock: {product.stock ?? product.stockActual ?? (product.cantidad ?? '0')}
+                  Stock: {product.stock ?? product.stockActual ?? (product.cantidad ?? '0')} paquetes
                 </div>
               </div>
             </div>
@@ -68,12 +68,12 @@ export default function ViewProductDialog({ open, onOpenChange, product }: ViewP
                 </span>
               </div>
               <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
-                <span className="text-sm text-[#7A6F66]">Unidad</span>
+                <span className="text-sm text-[#7A6F66]">Presentación</span>
                 <span className="text-sm text-[#2E2A26]">{product.unidad ?? product.unit ?? '-'}</span>
               </div>
               <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
                 <span className="text-sm text-[#7A6F66]">Stock</span>
-                <span className="text-sm text-[#2E2A26]">{product.stock ?? product.cantidad ?? 0}</span>
+                <span className="text-sm text-[#2E2A26]">{product.stock ?? product.cantidad ?? 0} paquetes</span>
               </div>
               <div className="flex justify-between bg-[#FBF7F4] p-2 rounded">
                 <span className="text-sm text-[#7A6F66]">Estado</span>

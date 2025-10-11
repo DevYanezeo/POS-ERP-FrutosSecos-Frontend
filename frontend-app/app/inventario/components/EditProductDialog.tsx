@@ -112,13 +112,19 @@ export default function EditProductDialog({
             />
           </div>
           <div>
-            <label className="text-sm text-[#7A6F66] mb-1 block">Unidad</label>
-            <input 
+            <label className="text-sm text-[#7A6F66] mb-1 block">Presentación</label>
+            <select
               value={editUnidad} 
               onChange={(e) => setEditUnidad(e.target.value)} 
-              className="w-full px-3 py-2 border rounded" 
-              placeholder="ej: kg, gr, lt" 
-            />
+              className="w-full px-3 py-2 border rounded"
+            >
+              <option value="">Seleccione la presentación</option>
+              <option value="100gr">100 gramos</option>
+              <option value="250gr">250 gramos</option>
+              <option value="500gr">500 gramos</option>
+              <option value="750gr">750 gramos</option>
+              <option value="1000gr">1 kilo (1000 gramos)</option>
+            </select>
           </div>
           <div>
             <label className="text-sm text-[#7A6F66] mb-1 block">Descripción</label>
@@ -149,7 +155,7 @@ export default function EditProductDialog({
                     const stock = lote.stock || lote.cantidad || 0
                     return (
                       <div key={idx} className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                        {codigo} - Stock: {stock} unidades
+                        {codigo} - Stock: {stock} paquetes
                       </div>
                     )
                   })}

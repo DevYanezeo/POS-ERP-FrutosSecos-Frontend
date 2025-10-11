@@ -41,6 +41,8 @@ export default function InventarioPage() {
   const [precio, setPrecio] = useState<number | ''>('')
   const [unidad, setUnidad] = useState("")
   const [stockVal, setStockVal] = useState<number | ''>('')
+  const [codigoLote, setCodigoLote] = useState("")
+  const [fechaVencimiento, setFechaVencimiento] = useState("")
   const [adding, setAdding] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
 
@@ -62,7 +64,7 @@ export default function InventarioPage() {
     category: p.nombreCategoria || p.categoria || (p.categoriaId ? `ID:${p.categoriaId}` : '-'),
     price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
     unit: p.unidad || '',
-    stock: `${p.stock ?? 0} unidades`,
+    stock: `${p.stock ?? 0} paquetes`,
     image: p.imagen || '/imagenes-productos/Almendras Orgánica.png',
     raw: p,
   }))
@@ -107,17 +109,45 @@ export default function InventarioPage() {
 
   const handleAdd = async () => {
     if (!nombre) return alert('Nombre requerido')
+    if (!stockVal || Number(stockVal) <= 0) return alert('Stock inicial requerido')
+    if (!codigoLote) return alert('Código de lote requerido')
+    if (!fechaVencimiento) return alert('Fecha de vencimiento requerida')
+    
     setAdding(true)
     try {
-      await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: Number(stockVal || 0) })
+      const nuevoProducto = { 
+        nombre, 
+        categoria, 
+        precio: Number(precio || 0), 
+        unidad, 
+        stock: Number(stockVal || 0) 
+      }
+      const productoGuardado = await saveProducto(nuevoProducto)
+      if (productoGuardado && productoGuardado.idProducto) {
+        const nuevoLote = {
+          producto: {
+            idProducto: productoGuardado.idProducto
+          },
+          cantidad: Number(stockVal),
+          codigoLote: codigoLote,
+          fechaVencimiento: fechaVencimiento,
+          fechaIngreso: new Date().toISOString().split('T')[0],
+          estado: true
+        }
+        const { crearLote } = await import("../../lib/lotes")
+        await crearLote(nuevoLote)
+      }
+      
       setNombre('')
       setCategoria('Frutos secos')
       setPrecio('')
       setUnidad('')
       setStockVal('')
+      setCodigoLote('')
+      setFechaVencimiento('')
       setShowAddForm(false)
       await fetchProductos()
-      alert('Producto agregado')
+      alert('Producto y lote agregados exitosamente')
     } catch (e: any) {
       alert(e?.message || 'Error agregando producto')
     } finally {
@@ -174,43 +204,102 @@ export default function InventarioPage() {
       </div>
 
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Agregar Producto</DialogTitle>
-            <DialogDescription>Complete la información del nuevo producto</DialogDescription>
+            <DialogDescription>Complete la información del nuevo producto y su lote inicial</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+          <div className="space-y-6 py-4">
+            {/* Información del Producto */}
             <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Nombre</label>
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" className="w-full px-3 py-2 border rounded" />
+              <h3 className="text-md font-semibold text-[#2E2A26] mb-3 pb-2 border-b">Información del Producto</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Nombre *</label>
+                  <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" className="w-full px-3 py-2 border rounded" required />
+                </div>
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Categoría</label>
+                  <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
+                    <option>Frutos secos</option>
+                    <option>Cereales</option>
+                    <option>Legumbres</option>
+                    <option>Semillas</option>
+                    <option>Endulzantes</option>
+                    <option>Especias</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Precio</label>
+                  <input value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Precio en CLP" type="number" className="w-full px-3 py-2 border rounded" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Presentación *</label>
+                  <select value={unidad} onChange={(e) => setUnidad(e.target.value)} className="w-full px-3 py-2 border rounded" required>
+                    <option value="">Seleccione la presentación</option>
+                    <option value="100gr">100 gramos</option>
+                    <option value="250gr">250 gramos</option>
+                    <option value="500gr">500 gramos</option>
+                    <option value="750gr">750 gramos</option>
+                    <option value="1000gr">1 kilo (1000 gramos)</option>
+                  </select>
+                  <p className="text-xs text-[#7A6F66] mt-1">Peso del producto por unidad</p>
+                </div>
+              </div>
             </div>
+
+            {/* Información del Lote Inicial */}
             <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Categoría</label>
-              <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
-                <option>Frutos secos</option>
-                <option>Cereales</option>
-                <option>Legumbres</option>
-                <option>Semillas</option>
-                <option>Endulzantes</option>
-                <option>Especias</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Precio</label>
-              <input value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Precio" type="number" className="w-full px-3 py-2 border rounded" />
-            </div>
-            <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Unidad</label>
-              <input value={unidad} onChange={(e) => setUnidad(e.target.value)} placeholder="ej: kg, gr, lt" className="w-full px-3 py-2 border rounded" />
-            </div>
-            <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Stock</label>
-              <input value={stockVal} onChange={(e) => setStockVal(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Cantidad" type="number" className="w-full px-3 py-2 border rounded" />
+              <h3 className="text-md font-semibold text-[#2E2A26] mb-3 pb-2 border-b">Lote Inicial</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Código de Lote *</label>
+                  <input 
+                    value={codigoLote} 
+                    onChange={(e) => setCodigoLote(e.target.value)} 
+                    placeholder="ej: L-2025-001" 
+                    className="w-full px-3 py-2 border rounded" 
+                    required 
+                  />
+                  <p className="text-xs text-[#7A6F66] mt-1">Identificador único del lote</p>
+                </div>
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Stock Inicial *</label>
+                  <input 
+                    value={stockVal} 
+                    onChange={(e) => setStockVal(e.target.value === '' ? '' : Number(e.target.value))} 
+                    placeholder="Cantidad de paquetes" 
+                    type="number" 
+                    min="1"
+                    className="w-full px-3 py-2 border rounded" 
+                    required 
+                  />
+                  <p className="text-xs text-[#7A6F66] mt-1">Número de paquetes de la presentación seleccionada</p>
+                </div>
+                <div>
+                  <label className="text-sm text-[#7A6F66] mb-1 block">Fecha de Vencimiento *</label>
+                  <input 
+                    value={fechaVencimiento} 
+                    onChange={(e) => setFechaVencimiento(e.target.value)} 
+                    type="date" 
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border rounded" 
+                    required 
+                  />
+                </div>
+                <div className="flex items-end">
+                  <div className="text-xs text-[#7A6F66] bg-blue-50 p-3 rounded border border-blue-200">
+                    <strong>Nota:</strong> La fecha de ingreso se registrará automáticamente como hoy
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <DialogClose className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66]">Cancelar</DialogClose>
-            <button disabled={adding} onClick={handleAdd} className="px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded disabled:opacity-50">{adding ? 'Agregando...' : 'Agregar'}</button>
+            <DialogClose className="px-4 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66]">Cancelar</DialogClose>
+            <button disabled={adding} onClick={handleAdd} className="px-4 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded disabled:opacity-50">
+              {adding ? 'Agregando...' : 'Agregar Producto y Lote'}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -293,7 +382,7 @@ export default function InventarioPage() {
                     <th className="px-4 py-3 text-left text-sm">Nombre</th>
                     <th className="px-4 py-3 text-left text-sm">Categoría</th>
                     <th className="px-4 py-3 text-left text-sm">Precio</th>
-                    <th className="px-4 py-3 text-left text-sm">Unidad</th>
+                    <th className="px-4 py-3 text-left text-sm">Presentación</th>
                     <th className="px-4 py-3 text-left text-sm">Stock</th>
                     <th className="px-4 py-3 text-left text-sm">Acciones</th>
                   </tr>
