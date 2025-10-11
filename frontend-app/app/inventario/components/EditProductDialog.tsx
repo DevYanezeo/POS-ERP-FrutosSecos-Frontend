@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { listarLotesPorProducto } from "@/lib/lotes"
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ export default function EditProductDialog({
   const [editUnidad, setEditUnidad] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [lotes, setLotes] = useState<any[]>([])
+  const [loadingLotes, setLoadingLotes] = useState(false)
 
   useEffect(() => {
     if (product && open) {
@@ -38,6 +41,20 @@ export default function EditProductDialog({
       setEditPrecio(product.precio ?? 0)
       setEditUnidad(product.unidad || '')
       setEditDescripcion(product.descripcion || '')
+      const fetchLotes = async () => {
+        setLoadingLotes(true)
+        try {
+          const idProducto = product?.idProducto || product?.id
+          const lotesData = await listarLotesPorProducto(idProducto)
+          setLotes(lotesData || [])
+        } catch(e: any) {
+          console.error('Error cargando lotes:', e)
+          setLotes([])
+        } finally {
+          setLoadingLotes(false)
+        }
+      }
+      fetchLotes()
     }
   }, [product, open])
 
@@ -46,12 +63,17 @@ export default function EditProductDialog({
     setProcessing(true)
     try {
       const id = product?.idProducto || product?.id
-      await onUpdate(id, { 
+      
+      const payload = { 
         nombre: editNombre, 
         precio: Number(editPrecio || 0), 
         unidad: editUnidad, 
-        descripcion: editDescripcion 
-      })
+        descripcion: editDescripcion,
+        // Incluir los lotes si existen
+        lotes: lotes.length > 0 ? lotes : undefined
+      }
+      
+      await onUpdate(id, payload)
       onSuccess()
       onOpenChange(false)
       alert('Producto actualizado exitosamente')
@@ -107,6 +129,36 @@ export default function EditProductDialog({
               placeholder="Descripción del producto" 
               rows={3} 
             />
+          </div>
+          <div className="border-t pt-3">
+            <label className="text-sm text-[#7A6F66] mb-2 block font-semibold">Lotes asociados</label>
+            {loadingLotes ? (
+              <div className="text-sm text-[#7A6F66] py-2">Cargando lotes...</div>
+            ) : lotes.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 p-3 rounded text-sm text-gray-600">
+                No hay lotes asociados a este producto.
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded space-y-2">
+                <div className="text-sm text-blue-800 font-medium">
+                  Este producto tiene {lotes.length} lote{lotes.length !== 1 ? 's' : ''} asociado{lotes.length !== 1 ? 's' : ''}
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                  {lotes.map((lote, idx) => {
+                    const codigo = lote.codigoLote || lote.codigo || `Lote ${lote.idLote || lote.id}`
+                    const stock = lote.stock || lote.cantidad || 0
+                    return (
+                      <div key={idx} className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                        {codigo} - Stock: {stock} unidades
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="text-xs text-blue-700 mt-2">
+                  Los lotes se enviarán automáticamente al actualizar el producto.
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
