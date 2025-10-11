@@ -66,14 +66,14 @@ export async function deleteProducto(id: number) {
   })
 }
 
-export async function agregarStock(id: number, cantidad: number) {
-  return fetchWithAuth(`${API_BASE}/api/productos/${id}/agregar-stock?cantidad=${cantidad}`, {
+export async function agregarStock(idProducto: number, idLote: number, cantidad: number) {
+  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/agregar-stock?idLote=${idLote}&cantidad=${cantidad}`, {
     method: 'PUT',
   })
 }
 
-export async function quitarStock(id: number, cantidad: number) {
-  return fetchWithAuth(`${API_BASE}/api/productos/${id}/quitar-stock?cantidad=${cantidad}`, {
+export async function quitarStock(idProducto: number, idLote: number, cantidad: number) {
+  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/quitar-stock?idLote=${idLote}&cantidad=${cantidad}`, {
     method: 'PUT',
   })
 }
