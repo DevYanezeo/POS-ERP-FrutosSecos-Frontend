@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { toast } from '@/hooks/use-toast'
 import { findLotesVencimientoProximoDTO } from '@/lib/lotes'
+import { getProductosStockBajo } from '@/lib/productos'
 
 type Producto = {
   idProducto: number
@@ -21,11 +22,7 @@ export default function StockAlert() {
 
   async function fetchLowStock() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'}/api/productos/stock-bajo`, {
-        headers: { 'Content-Type': 'application/json', 'Authorization': typeof window !== 'undefined' ? (localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : '') : '' }
-      })
-      if (!res.ok) return
-      const data = await res.json()
+      const data = await getProductosStockBajo()
       setLowStock(data || [])
       if (data && data.length > 0) {
         toast({ title: `Stock bajo: ${data.length} productos`, description: 'Revisa inventario para reabastecer.' })
