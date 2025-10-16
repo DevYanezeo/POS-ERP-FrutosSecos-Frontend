@@ -46,6 +46,10 @@ export async function getProductosByCategoria(categoriaId: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/categoria/${categoriaId}`)
 }
 
+export async function getProductosStockBajo() {
+  return fetchWithAuth(`${API_BASE}/api/productos/stock-bajo`)
+}
+
 export async function saveProducto(producto: any) {
   return fetchWithAuth(`${API_BASE}/api/productos/save`, {
     method: 'POST',
@@ -67,13 +71,13 @@ export async function deleteProducto(id: number) {
 }
 
 export async function agregarStock(idProducto: number, idLote: number, cantidad: number) {
-  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/agregar-stock?idLote=${idLote}&cantidad=${cantidad}`, {
+  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/lotes/${idLote}/agregar-stock?cantidad=${cantidad}`, {
     method: 'PUT',
   })
 }
 
 export async function quitarStock(idProducto: number, idLote: number, cantidad: number) {
-  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/quitar-stock?idLote=${idLote}&cantidad=${cantidad}`, {
+  return fetchWithAuth(`${API_BASE}/api/productos/${idProducto}/lotes/${idLote}/quitar-stock?cantidad=${cantidad}`, {
     method: 'PUT',
   })
 }
