@@ -55,16 +55,23 @@ export default function InventarioPage() {
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
 
-  const mapProductos = (data: any[]) => (data || []).map((p: any) => ({
-    id: p.idProducto || p.id || 0,
-    name: p.nombre || p.name || 'Sin nombre',
-    category: p.nombreCategoria || p.categoria || (p.categoriaId ? `ID:${p.categoriaId}` : '-'),
-    price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
-    unit: p.unidad || '',
-    stock: `${p.stock ?? 0} unidades`,
-    image: p.imagen || '/imagenes-productos/Almendras Orgánica.png',
-    raw: p,
-  }))
+  const mapProductos = (data: any[]) => (data || []).map((p: any) => {
+    let unit = p.unidad || ''
+    if (!unit || typeof unit === 'number') {
+      unit = 'Unidad'
+    }
+    
+    return {
+      id: p.idProducto || p.id || 0,
+      name: p.nombre || p.name || 'Sin nombre',
+      category: p.nombreCategoria || p.categoria || (p.categoriaId ? `ID:${p.categoriaId}` : '-'),
+      price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
+      unit: unit,
+      stock: `${p.stock ?? 0} unidades`,
+      image: p.imagen || '/imagenes-productos/Almendras Orgánica.png',
+      raw: p,
+    }
+  })
 
   const fetchProductos = async () => {
     setLoading(true)
@@ -88,7 +95,23 @@ export default function InventarioPage() {
       const current = await getProductoById(id)
       // mezclar: los cambios prevalecen, pero preservamos campos no enviados
       const merged = { ...current, ...changes }
-      await updateProducto(id, merged)
+      const payload: any = {
+        idProducto: merged.idProducto,
+        nombre: merged.nombre,
+        descripcion: merged.descripcion,
+        imagen: merged.imagen,
+        precio: merged.precio,
+        stock: merged.stock,
+        unidad: merged.unidad,
+        estado: merged.estado,
+        codigo: merged.codigo,
+        categoriaId: merged.categoriaId,
+        peso: merged.peso,
+      }
+      
+      console.log('Payload limpio:', payload)
+      
+      await updateProducto(id, payload)
     } catch (e:any) {
       throw e
     }
@@ -110,7 +133,7 @@ export default function InventarioPage() {
     if (!nombre) return alert('Nombre requerido')
     setAdding(true)
     try {
-      await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: Number(stockVal || 0) })
+      await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: 0 })
       setNombre('')
       setCategoria('Frutos secos')
       setPrecio('')
@@ -448,12 +471,20 @@ export default function InventarioPage() {
               <input value={precio} onChange={(e) => setPrecio(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Precio" type="number" className="w-full px-3 py-2 border rounded" />
             </div>
             <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Unidad</label>
-              <input value={unidad} onChange={(e) => setUnidad(e.target.value)} placeholder="ej: kg, gr, lt" className="w-full px-3 py-2 border rounded" />
-            </div>
-            <div>
-              <label className="text-sm text-[#7A6F66] mb-1 block">Stock</label>
-              <input value={stockVal} onChange={(e) => setStockVal(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Cantidad" type="number" className="w-full px-3 py-2 border rounded" />
+              <label className="text-sm text-[#7A6F66] mb-1 block">Presentación</label>
+              <div className="flex items-center gap-0 border rounded overflow-hidden">
+                <input 
+                  type="number"
+                  value={unidad.replace(/[^0-9]/g, '')} 
+                  onChange={(e) => {
+                    const num = e.target.value.replace(/[^0-9]/g, '')
+                    setUnidad(num ? `${num}gr` : '')
+                  }} 
+                  placeholder="250" 
+                  className="w-full px-3 py-2 border-0 outline-none" 
+                />
+                <span className="px-3 py-2 bg-[#F5EDE4] text-[#7A6F66] font-medium whitespace-nowrap">gr</span>
+              </div>
             </div>
           </div>
           <DialogFooter>
