@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { listarLotesPorProducto, crearLote } from "@/lib/lotes"
+import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote } from "@/lib/lotes"
+import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,11 @@ export default function EditProductDialog({
   const [cantidadLote, setCantidadLote] = useState<number | ''>(0)
   const [fechaVencimiento, setFechaVencimiento] = useState('')
   const [creatingLote, setCreatingLote] = useState(false)
+  const [editingLote, setEditingLote] = useState<any | null>(null)
+  const [editFechaVencimiento, setEditFechaVencimiento] = useState('')
+  const [editCantidad, setEditCantidad] = useState<number | ''>(0)
+  const [editEstadoLote, setEditEstadoLote] = useState<boolean>(true)
+  const [updatingLote, setUpdatingLote] = useState(false)
 
   useEffect(() => {
     if (product && open) {
@@ -85,6 +91,14 @@ export default function EditProductDialog({
       fetchLotes()
     }
   }, [product, open])
+
+  useEffect(() => {
+    if (editingLote) {
+      setEditFechaVencimiento(editingLote.fechaVencimiento ? editingLote.fechaVencimiento.split('T')[0] : '')
+      setEditCantidad(editingLote.cantidad || editingLote.stock || 0)
+      setEditEstadoLote(editingLote.estado !== false)
+    }
+  }, [editingLote])
 
   const handleCreateLote = async () => {
     if (!codigoLote) return alert('El código del lote es requerido')
@@ -115,6 +129,32 @@ export default function EditProductDialog({
       alert(e?.message || 'Error creando lote')
     } finally {
       setCreatingLote(false)
+    }
+  }
+
+  const handleEditLote = async () => {
+    if (!editingLote) return
+    setUpdatingLote(true)
+    try {
+      const idLote = editingLote.idLote || editingLote.id
+      if (editFechaVencimiento !== editingLote.fechaVencimiento) {
+        await updateFechaVencimientoLote(idLote, editFechaVencimiento)
+      }
+      if (Number(editCantidad) !== (editingLote.cantidad || editingLote.stock)) {
+        await updateCantidadLote(idLote, Number(editCantidad))
+      }
+      if (editEstadoLote !== (editingLote.estado !== false)) {
+        await updateEstadoLote(idLote, editEstadoLote)
+      }
+      alert('Lote actualizado exitosamente')
+      setEditingLote(null)
+      const idProducto = product?.idProducto || product?.id
+      const lotesData = await listarLotesPorProducto(idProducto)
+      setLotes(lotesData || [])
+    } catch(e: any) {
+      alert(e?.message || 'Error actualizando lote')
+    } finally {
+      setUpdatingLote(false)
     }
   }
 
@@ -255,11 +295,21 @@ export default function EditProductDialog({
                     {lotes.map((lote, idx) => {
                       const codigo = lote.codigoLote || lote.codigo || `Lote ${lote.idLote || lote.id}`
                       const stock = lote.stock || lote.cantidad || 0
+                      const isHabilitado = lote.estado !== false
                       
                       return (
-                        <div key={idx} className="border rounded bg-white p-3 hover:bg-gray-50">
+                        <div key={idx} className="border rounded bg-white p-3 hover:bg-gray-50 flex justify-between items-start">
                           <div className="flex-1">
-                            <div className="font-medium text-sm text-gray-800">{codigo}</div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="font-medium text-sm text-gray-800">{codigo}</div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                isHabilitado 
+                                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                                  : 'bg-red-100 text-red-800 border border-red-200'
+                              }`}>
+                                {isHabilitado ? '✓ Habilitado' : '✕ Deshabilitado'}
+                              </span>
+                            </div>
                             <div className="text-xs text-gray-600 mt-1">Cantidad: {stock}</div>
                             {lote.fechaVencimiento && (
                               <div className="text-xs text-gray-500 mt-1">
@@ -267,6 +317,13 @@ export default function EditProductDialog({
                               </div>
                             )}
                           </div>
+                          <button
+                            onClick={() => setEditingLote(lote)}
+                            className="p-1 text-gray-400 hover:text-[#A0522D] hover:bg-gray-100 rounded transition-colors"
+                            title="Editar lote"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                         </div>
                       )
                     })}
@@ -346,6 +403,62 @@ export default function EditProductDialog({
               className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {creatingLote ? 'Creando...' : 'Crear Lote'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingLote} onOpenChange={() => setEditingLote(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base">Editar Lote</DialogTitle>
+            <DialogDescription className="text-xs">
+              {editingLote?.codigoLote || editingLote?.codigo || `Lote ${editingLote?.idLote || editingLote?.id}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Cantidad</label>
+              <input 
+                type="number"
+                value={editCantidad}
+                onChange={(e) => setEditCantidad(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="0"
+                min="1"
+                className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
+              <input 
+                type="date"
+                value={editFechaVencimiento}
+                onChange={(e) => setEditFechaVencimiento(e.target.value)}
+                className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Estado</label>
+              <select
+                value={editEstadoLote ? 'habilitado' : 'deshabilitado'}
+                onChange={(e) => setEditEstadoLote(e.target.value === 'habilitado')}
+                className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+              >
+                <option value="habilitado">✓ Habilitado</option>
+                <option value="deshabilitado">✕ Deshabilitado</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter className="mt-4 pt-3 border-t gap-2">
+            <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
+              Cancelar
+            </DialogClose>
+            <button 
+              disabled={updatingLote}
+              onClick={handleEditLote}
+              className="px-4 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
+            >
+              {updatingLote ? 'Actualizando...' : 'Actualizar Lote'}
             </button>
           </DialogFooter>
         </DialogContent>

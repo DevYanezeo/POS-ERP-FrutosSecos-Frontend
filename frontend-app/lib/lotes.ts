@@ -40,3 +40,24 @@ export async function findLotesVencimientoProximoDTO(dias = 30) {
 	return fetchWithAuth(`${API_BASE}/api/lote/alertas?dias=${dias}`)
 }
 
+export async function updateFechaVencimientoLote(id: number, fechaVencimiento: string) {
+	return fetchWithAuth(`${API_BASE}/api/lote/${id}/fecha-vencimiento`, {
+		method: 'PATCH',
+		body: JSON.stringify({ fechaVencimiento }),
+	})
+}
+
+export async function updateCantidadLote(id: number, cantidad: number) {
+	return fetchWithAuth(`${API_BASE}/api/lote/${id}/cantidad`, {
+		method: 'PATCH',
+		body: JSON.stringify({ cantidad }),
+	})
+}
+
+export async function updateEstadoLote(id: number, estado: boolean) {
+	return fetchWithAuth(`${API_BASE}/api/lote/${id}/estado`, {
+		method: 'PATCH',
+		body: JSON.stringify({ estado }),
+	})
+}
+

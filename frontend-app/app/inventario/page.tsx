@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,8 @@ export default function InventarioPage() {
   const [filterPrecioMin, setFilterPrecioMin] = useState<number|''>('')
   const [filterPrecioMax, setFilterPrecioMax] = useState<number|''>('')
 
+  const [categorias, setCategorias] = useState<any[]>([])
+
   const [showAddForm, setShowAddForm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -49,7 +51,7 @@ export default function InventarioPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [nombre, setNombre] = useState("")
-  const [categoria, setCategoria] = useState("Frutos secos")
+  const [categoria, setCategoria] = useState("")
   const [precio, setPrecio] = useState<number | ''>('')
   const [unidad, setUnidad] = useState("")
   const [stockVal, setStockVal] = useState<number | ''>('')
@@ -117,7 +119,18 @@ export default function InventarioPage() {
     }
   }
 
-  useEffect(() => { fetchProductos() }, [])
+  useEffect(() => { 
+    fetchProductos()
+    const loadCategorias = async () => {
+      try {
+        const data = await getCategorias()
+        setCategorias(data || [])
+      } catch (e: any) {
+        console.error('Error cargando categorías:', e?.message)
+      }
+    }
+    loadCategorias()
+  }, [])
 
   const onBuscar = async () => {
     try {
@@ -135,7 +148,7 @@ export default function InventarioPage() {
     try {
       await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: 0 })
       setNombre('')
-      setCategoria('Frutos secos')
+      setCategoria('')
       setPrecio('')
       setUnidad('')
       setStockVal('')
@@ -356,17 +369,17 @@ export default function InventarioPage() {
             <div className="space-y-3">
               <label className="text-sm font-medium text-[#2E2A26] block">Categoría</label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {['', 'Frutos secos', 'Cereales', 'Legumbres', 'Semillas', 'Endulzantes', 'Especias'].map((cat) => (
+                {[{ nombre: '' }, ...categorias].map((cat) => (
                   <button
-                    key={cat}
-                    onClick={() => setFilterCategoria(cat)}
+                    key={cat.nombre || cat.idCategoria || cat}
+                    onClick={() => setFilterCategoria(cat.nombre || '')}
                     className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filterCategoria === cat
+                      filterCategoria === (cat.nombre || '')
                         ? 'bg-[#A0522D] text-white border-[#A0522D]'
                         : 'bg-white text-[#7A6F66] border-[#F5EDE4] hover:bg-[#FBF7F4] hover:border-[#A0522D]/30'
                     }`}
                   >
-                    {cat || 'Todas'}
+                    {cat.nombre || 'Todas'}
                   </button>
                 ))}
               </div>
@@ -458,12 +471,10 @@ export default function InventarioPage() {
             <div>
               <label className="text-sm text-[#7A6F66] mb-1 block">Categoría</label>
               <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
-                <option>Frutos secos</option>
-                <option>Cereales</option>
-                <option>Legumbres</option>
-                <option>Semillas</option>
-                <option>Endulzantes</option>
-                <option>Especias</option>
+                <option value="">Seleccionar categoría</option>
+                {categorias.map(cat => (
+                  <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre}</option>
+                ))}
               </select>
             </div>
             <div>

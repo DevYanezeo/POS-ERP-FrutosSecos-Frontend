@@ -81,3 +81,7 @@ export async function quitarStock(idProducto: number, idLote: number, cantidad: 
     method: 'PUT',
   })
 }
+
+export async function getCategorias() {
+  return fetchWithAuth(`${API_BASE}/api/categorias`)
+}
