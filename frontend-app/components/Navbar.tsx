@@ -20,6 +20,7 @@ export default function Navbar() {
 
   const isInicio = pathname === '/' || pathname === '/dashboard'
   const isInventario = pathname?.startsWith('/inventario')
+  const isVentas = pathname?.startsWith('/ventas')
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -45,6 +46,7 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-2 ml-6">
             <button onClick={() => router.push('/')} className={`px-3 py-1 rounded text-sm ${isInicio ? 'bg-white text-[#7A6F66] font-semibold' : 'text-[#7A6F66] hover:bg-white'}`}>Inicio</button>
             <button onClick={() => router.push('/inventario')} className={`px-3 py-1 rounded text-sm ${isInventario ? 'bg-blue-500 text-white' : 'text-[#7A6F66] hover:bg-white'}`}>Inventario</button>
+            <button onClick={() => router.push('/ventas')} className={`px-3 py-1 rounded text-sm ${isVentas ? 'bg-blue-500 text-white' : 'text-[#7A6F66] hover:bg-white'}`}>Ventas</button>
           </nav>
         </div>
 

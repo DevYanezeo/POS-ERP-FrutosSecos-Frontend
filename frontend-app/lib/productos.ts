@@ -13,11 +13,23 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
     ...init,
     headers: { ...(init?.headers as any), ...defaultHeaders },
   }
+  const method = (mergedInit.method || 'GET').toUpperCase()
+  try {
+    console.log(`[API] ${method} ${input}`)
+    if (mergedInit.body) {
+      try {
+        const bodyPreview = typeof mergedInit.body === 'string' ? mergedInit.body : JSON.stringify(mergedInit.body)
+        console.log(`[API BODY] ${bodyPreview?.slice(0, 100)}${bodyPreview && bodyPreview.length > 100 ? '...' : ''}`)
+      } catch {}
+    }
+  } catch {}
   const res = await fetch(input, mergedInit)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    console.log(`[API] ${method} ${input} -> ${res.status}`)
     throw new Error(text || `HTTP error ${res.status}`)
   }
+  console.log(`[API] ${method} ${input} -> ${res.status}`)
   return res.json().catch(() => null)
 }
 
