@@ -7,6 +7,7 @@ export type LoginPayload = {
 
 export type LoginResponse = {
   token: string
+  idUsuario: number
   email: string
   nombre: string
   rol: string
@@ -23,7 +24,9 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     throw new Error('Credenciales inválidas, intentelo nuevamente')
   }
 
-  return res.json()
+  const data = await res.json()
+  console.log('login response:', data)
+  return data
 }
 
 export type RegisterPayload = {
