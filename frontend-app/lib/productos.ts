@@ -1,9 +1,30 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 
+export interface Producto {
+  id?: number
+  productoId?: number
+  idProducto?: number
+  _id?: number
+  nombre: string
+  codigo?: string
+  precio: number
+  stock: number
+  unidad?: string
+  categoria?: string
+  [key: string]: any
+}
+
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const headers: Record<string,string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  
+  // Agregar token CSRF si existe (para Spring Boot)
+  const csrfToken = typeof window !== 'undefined' ? localStorage.getItem('csrf_token') : null
+  if (csrfToken) {
+    headers['X-XSRF-TOKEN'] = csrfToken
+  }
+  
   return headers
 }
 
@@ -46,8 +67,12 @@ export async function getProductoById(id: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/${id}`)
 }
 
-export async function buscarProductos(nombre: string) {
-  return fetchWithAuth(`${API_BASE}/api/productos/buscar?nombre=${encodeURIComponent(nombre)}`)
+export async function buscarProductos(nombre: string, categoria?: string) {
+  let url = `${API_BASE}/api/productos/buscar?nombre=${encodeURIComponent(nombre)}`
+  if (categoria && categoria.trim()) {
+    url += `&categoria=${encodeURIComponent(categoria)}`
+  }
+  return fetchWithAuth(url)
 }
 
 export async function getActivos() {
@@ -96,4 +121,33 @@ export async function quitarStock(idProducto: number, idLote: number, cantidad: 
 
 export async function getCategorias() {
   return fetchWithAuth(`${API_BASE}/api/categorias`)
+}
+
+export async function getProductoByCodigo(codigo: string) {
+  try {
+    const url = `${API_BASE}/api/productos/buscar?nombre=${encodeURIComponent(codigo)}`
+    console.log(`[API] GET ${url}`)
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (res.status === 404) return null
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(text || `HTTP error ${res.status}`)
+    }
+
+    const productos = await res.json()
+    // Buscar coincidencia exacta por código de barras
+    const productoExacto = productos?.find((p: any) => p.codigo === codigo)
+    if (productoExacto) return productoExacto
+    
+    // Si no hay coincidencia exacta, devolver el primero (búsqueda por nombre)
+    return productos?.[0] || null
+  } catch (err: any) {
+    const message = err?.message || String(err)
+    throw new Error(message)
+  }
 }

@@ -5,6 +5,13 @@ function getAuthHeaders() {
   const token = hasWindow ? (globalThis as any).localStorage.getItem('token') : null
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  
+  // Agregar token CSRF si existe (para Spring Boot)
+  const csrfToken = hasWindow ? (globalThis as any).localStorage.getItem('csrf_token') : null
+  if (csrfToken) {
+    headers['X-XSRF-TOKEN'] = csrfToken
+  }
+  
   return headers
 }
 

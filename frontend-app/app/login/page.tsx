@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { login } from "../../lib/api"
 import RegisterForm from '../../components/RegisterForm'
+import { initCsrfToken } from '../../lib/csrf'
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -66,6 +67,14 @@ export default function LoginPage() {
         console.debug('login: error guardando user_id', e)
       }
       localStorage.setItem('isAuthenticated', 'true')
+      
+      // Obtener token CSRF después del login
+      try {
+        await initCsrfToken()
+      } catch (e) {
+        console.warn('No se pudo obtener token CSRF:', e)
+      }
+      
       router.push('/dashboard')
     } catch (err: any) {
       const msg = err?.message || err?.error || 'Error de autenticación'
