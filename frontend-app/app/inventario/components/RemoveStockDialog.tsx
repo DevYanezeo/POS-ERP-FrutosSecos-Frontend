@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from '@/hooks/use-toast'
 import { listarLotesPorProducto } from "@/lib/lotes"
 import {
   Dialog,
@@ -65,9 +66,9 @@ export default function RemoveStockDialog({
 
   const handleRemove = async () => {
     const cantidad = Number(stockToRemove || '0')
-    if (!cantidad || cantidad <= 0) return alert('La cantidad debe ser mayor a 0')
-    if (!selectedLote) return alert('Debe seleccionar un lote')
-    if (cantidad > stockLoteActual) return alert(`No puedes quitar más del stock disponible del lote (${stockLoteActual} paquetes)`)
+  if (!cantidad || cantidad <= 0) return toast({ title: 'Cantidad inválida', description: 'La cantidad debe ser mayor a 0', variant: 'destructive' })
+  if (!selectedLote) return toast({ title: 'Lote no seleccionado', description: 'Debe seleccionar un lote', variant: 'destructive' })
+  if (cantidad > stockLoteActual) return toast({ title: 'Cantidad mayor al stock', description: `No puedes quitar más del stock disponible del lote (${stockLoteActual} paquetes)`, variant: 'destructive' })
     setProcessing(true)
     try {
       const idProducto = product?.idProducto || product?.id
@@ -75,11 +76,16 @@ export default function RemoveStockDialog({
       await onRemoveStock(idProducto, idLote, cantidad)
       onSuccess()
       onOpenChange(false)
-      alert('Stock actualizado exitosamente')
-    } catch(e: any) { 
-      alert(e?.message || 'Error quitando stock') 
-    } finally { 
-      setProcessing(false) 
+  toast({ title: 'Stock actualizado', description: 'Stock actualizado exitosamente', variant: 'success' })
+    } catch(e: any) {
+      const msg = String(e?.message || '')
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error', description: msg || 'Error quitando stock', variant: 'destructive' })
+      }
+    } finally {
+      setProcessing(false)
     }
   }
 

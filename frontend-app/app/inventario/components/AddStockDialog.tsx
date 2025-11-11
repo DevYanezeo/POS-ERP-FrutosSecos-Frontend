@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { toast } from '@/hooks/use-toast'
 
 interface AddStockDialogProps {
   open: boolean
@@ -61,8 +62,14 @@ export default function AddStockDialog({
 
   const handleAdd = async () => {
     const cantidad = Number(stockToAdd || '0')
-    if (!cantidad || cantidad <= 0) return alert('La cantidad debe ser mayor a 0')
-    if (!selectedLote) return alert('Debe seleccionar un lote')
+    if (!cantidad || cantidad <= 0) {
+      toast({ title: 'Cantidad inválida', description: 'La cantidad debe ser mayor a 0', variant: 'destructive' })
+      return
+    }
+    if (!selectedLote) {
+      toast({ title: 'Lote no seleccionado', description: 'Debe seleccionar un lote', variant: 'destructive' })
+      return
+    }
     setProcessing(true)
     try {
       const idProducto = product?.idProducto || product?.id
@@ -70,10 +77,17 @@ export default function AddStockDialog({
       await onAddStock(idProducto, idLote, cantidad)
       onSuccess()
       onOpenChange(false)
-      alert('Stock agregado exitosamente')
-    } catch(e: any) { 
-      alert(e?.message || 'Error agregando stock') 
-    } finally { 
+  toast({ title: 'Stock agregado', description: 'Stock agregado exitosamente', variant: 'success' })
+    } catch(e: any) {
+      const msg = String(e?.message || '')
+      // If the error is a 403 or an "Acceso denegado" from the API, show
+      // a friendly, localized message instead of the raw HTTP text.
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error agregando stock', description: msg || 'Error agregando stock', variant: 'destructive' })
+      }
+    } finally {
       setProcessing(false) 
     }
   }

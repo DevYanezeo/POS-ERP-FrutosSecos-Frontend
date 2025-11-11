@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'MSM — Mil Sabores Manager',
@@ -25,6 +26,8 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Navbar />
         <main>{children}</main>
+        {/* Toasts provider (renders toasts triggered via hooks/use-toast) */}
+        <Toaster />
       </body>
     </html>
   )

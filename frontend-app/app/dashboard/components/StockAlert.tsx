@@ -40,13 +40,11 @@ export default function StockAlert() {
       const uniqueData = removeDuplicates(data || [], 'idProducto') as Producto[]
       setLowStock(uniqueData)
       
-      if (uniqueData && uniqueData.length > 0) {
-        toast({ 
-          title: `${uniqueData.length} producto${uniqueData.length > 1 ? 's' : ''} con stock bajo`,
-          description: 'Revisa el inventario para reabastecer.',
-          variant: 'destructive'
-        })
-      }
+      // Note: do not show a global destructive toast here. The UI exposes
+      // the alert via the notifications button/drawer and badge. Showing
+      // an automatic global destructive toast proved too noisy and may be
+      // visible for users without permissions. Keep only the drawer/badge
+      // indication and avoid popping a toast automatically.
     } catch (e) {
       console.error('Error fetching low stock', e)
     }
