@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { toast } from '@/hooks/use-toast'
 
 function Tabs({ activeTab, onTabChange, tabs }: { activeTab: string; onTabChange: (tab: string) => void; tabs: string[] }) {
   return (
@@ -101,9 +102,15 @@ export default function EditProductDialog({
   }, [editingLote])
 
   const handleCreateLote = async () => {
-    if (!codigoLote) return alert('El código del lote es requerido')
-    if (!cantidadLote || cantidadLote <= 0) return alert('La cantidad debe ser mayor a 0')
-    
+    if (!codigoLote) {
+      toast({ title: 'Código requerido', description: 'El código del lote es requerido', variant: 'destructive' })
+      return
+    }
+    if (!cantidadLote || cantidadLote <= 0) {
+      toast({ title: 'Cantidad inválida', description: 'La cantidad debe ser mayor a 0', variant: 'destructive' })
+      return
+    }
+
     setCreatingLote(true)
     try {
       const idProducto = product?.idProducto || product?.id
@@ -116,7 +123,7 @@ export default function EditProductDialog({
       }
       
       await crearLote(lotePayload)
-      alert('Lote creado exitosamente')
+  toast({ title: 'Lote creado', description: 'Lote creado exitosamente', variant: 'success' })
       
       setCodigoLote('')
       setCantidadLote(0)
@@ -126,7 +133,12 @@ export default function EditProductDialog({
       const lotesData = await listarLotesPorProducto(idProducto)
       setLotes(lotesData || [])
     } catch(e: any) {
-      alert(e?.message || 'Error creando lote')
+      const msg = String(e?.message || '')
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error creando lote', description: msg || 'Error creando lote', variant: 'destructive' })
+      }
     } finally {
       setCreatingLote(false)
     }
@@ -146,13 +158,18 @@ export default function EditProductDialog({
       if (editEstadoLote !== (editingLote.estado !== false)) {
         await updateEstadoLote(idLote, editEstadoLote)
       }
-      alert('Lote actualizado exitosamente')
+  toast({ title: 'Lote actualizado', description: 'Lote actualizado exitosamente', variant: 'success' })
       setEditingLote(null)
       const idProducto = product?.idProducto || product?.id
       const lotesData = await listarLotesPorProducto(idProducto)
       setLotes(lotesData || [])
     } catch(e: any) {
-      alert(e?.message || 'Error actualizando lote')
+      const msg = String(e?.message || '')
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error actualizando lote', description: msg || 'Error actualizando lote', variant: 'destructive' })
+      }
     } finally {
       setUpdatingLote(false)
     }
@@ -161,7 +178,10 @@ export default function EditProductDialog({
 
 
   const handleSave = async () => {
-    if (!editNombre) return alert('El nombre es requerido')
+    if (!editNombre) {
+      toast({ title: 'Nombre requerido', description: 'El nombre es requerido', variant: 'destructive' })
+      return
+    }
     setProcessing(true)
     try {
       const id = product?.idProducto || product?.id
@@ -181,10 +201,15 @@ export default function EditProductDialog({
       await onUpdate(id, payload)
       onSuccess()
       onOpenChange(false)
-      alert('Producto actualizado exitosamente')
+  toast({ title: 'Producto actualizado', description: 'Producto actualizado exitosamente', variant: 'success' })
     } catch(e: any) { 
       console.error('EditProductDialog - Error:', e)
-      alert(e?.message || 'Error actualizando producto') 
+      const msg = String(e?.message || '')
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error actualizando producto', description: msg || 'Error actualizando producto', variant: 'destructive' })
+      }
     } finally { 
       setProcessing(false) 
     }

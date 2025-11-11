@@ -1,4 +1,5 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+import { toast } from '@/hooks/use-toast'
 
 function getAuthHeaders() {
   const hasWindow = typeof globalThis !== 'undefined' && (globalThis as any).localStorage !== undefined
@@ -34,6 +35,17 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     console.error(`[API] ${method} ${input} -> ${res.status} body: ${text}`)
+    if (res.status === 403) {
+      try {
+        toast({
+          title: 'Acceso denegado',
+          description: 'No tienes permiso para acceder a esta funcionalidad. Contacta al administrador.',
+          variant: 'destructive',
+        })
+      } catch (e) {
+        console.debug('toast error', e)
+      }
+    }
     // include body in thrown error for caller to display
     throw new Error(text || `HTTP error ${res.status}`)
   }
