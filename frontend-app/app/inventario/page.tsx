@@ -20,6 +20,7 @@ import EditProductDialog from "./components/EditProductDialog"
 import AddStockDialog from "./components/AddStockDialog"
 import RemoveStockDialog from "./components/RemoveStockDialog"
 import DeleteProductDialog from "./components/DeleteProductDialog"
+import PrintButton from "./components/PrintButton"
 
 export default function InventarioPage() {
   
@@ -608,7 +609,7 @@ export default function InventarioPage() {
                 const stockNum = product.raw?.stock ?? 0
                 const isLowStock = stockNum <= 5
                 return (
-                <div key={product.id} className={`bg-white rounded-xl border transition-all duration-200 hover:shadow-lg ${isLowStock ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : 'border-[#F5EDE4] hover:border-[#A0522D]/30'}`} style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
+                <div key={product.id} className={`bg-white rounded-xl border transition-all duration-200 hover:shadow-lg overflow-hidden ${isLowStock ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : 'border-[#F5EDE4] hover:border-[#A0522D]/30'}`} style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
                   {/* Product Image */}
                   <div className="relative p-0">
                     {isLowStock && (
@@ -646,49 +647,57 @@ export default function InventarioPage() {
 
                   {/* Action Buttons - alineados con la base de la card */}
                   <div className="p-5 pt-0 border-t border-[#F5EDE4]/50">
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                      <button 
-                        onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { toast({ title: 'Error', description: e?.message || 'Error cargando detalle', variant: 'destructive' }) } }} 
-                        className="px-2 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Ver detalles"
-                      >
-                        <Eye className="w-3 h-3" />
-                        Ver
-                      </button>
-                      <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
-                        className="px-2 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Editar producto"
-                      >
-                        <Edit className="w-3 h-3" />
-                        Editar
-                      </button>
-                      <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
-                        className="px-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Eliminar producto"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Eliminar
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
-                        className="px-2 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Agregar stock"
-                      >
-                        <PlusCircle className="w-3 h-3" />
-                        + Stock
-                      </button>
-                      <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
-                        className="px-2 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Quitar stock"
-                      >
-                        <MinusCircle className="w-3 h-3" />
-                        - Stock
-                      </button>
+                    <div className="w-full flex flex-wrap items-center gap-3 justify-between overflow-hidden">
+                      <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                        <button 
+                          onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { toast({ title: 'Error', description: e?.message || 'Error cargando detalle', variant: 'destructive' }) } }} 
+                          className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Ver detalles"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </button>
+
+                        <button 
+                          onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                          className="px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Editar producto"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </button>
+
+                        <PrintButton productRaw={product.raw} />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button 
+                          onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                          className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Agregar stock"
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                          Stock
+                        </button>
+
+                        <button 
+                          onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                          className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Quitar stock"
+                        >
+                          <MinusCircle className="w-4 h-4" />
+                          Stock
+                        </button>
+
+                        <button 
+                          onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                          className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Eliminar producto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -752,7 +761,7 @@ export default function InventarioPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-1">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
                             <button 
                               onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-[#7A6F66] hover:text-[#2E2A26] hover:bg-[#FBF7F4] rounded-lg transition-colors" 
@@ -767,6 +776,17 @@ export default function InventarioPage() {
                             >
                               <Edit className="w-4 h-4" />
                             </button>
+
+                            <PrintButton productRaw={p.raw} compact />
+
+                            <button 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
+                              className="p-2 text-[#A0522D] hover:text-[#8B5E3C] hover:bg-[#A0522D]/10 rounded-lg transition-colors" 
+                              title={`Editar ${p.name}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+
                             <button 
                               onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" 
@@ -781,6 +801,7 @@ export default function InventarioPage() {
                             >
                               <MinusCircle className="w-4 h-4" />
                             </button>
+
                             <button 
                               onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" 
