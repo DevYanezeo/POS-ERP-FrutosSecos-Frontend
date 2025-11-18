@@ -9,7 +9,60 @@ import ScanProductoInput from './components/ScanProductoInput'
 import { Loader2, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
 
 function calcularIVA(subtotal: number) {
-  return Math.round(subtotal * 0.19)
+  // IVA removed per client request: always 0
+  return 0
+}
+
+// Generate printable boleta (opens print dialog). Uses /logo.png from public.
+function generarBoletaVenta(cart: any[], saleId?: any) {
+  try {
+    const subtotal = cart.reduce((s, it) => s + (Number(it.precioUnitario) * Number(it.cantidad)), 0)
+    const logoUrl = '/logo.png'
+    const title = 'RESUMEN DE COMPRA - DETALLE DE VENTA'
+    const footerNote = `Documento no válido como venta`
+
+    const rows = (cart || []).map((it: any) => `
+      <tr>
+        <td style="padding:6px 0">${it.nombre || it.name}</td>
+        <td style="text-align:center">${it.cantidad}</td>
+        <td style="text-align:right">${Number(it.precioUnitario || it.price).toLocaleString()}</td>
+        <td style="text-align:right">${(Number(it.precioUnitario || it.price) * Number(it.cantidad)).toLocaleString()}</td>
+      </tr>
+    `).join('\n')
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:10px;color:#222}
+        /* increased width so columns can separate */
+        .receipt{width:420px;margin:0 auto}
+        .logo{width:90px;margin:0 auto;display:block}
+        h1{font-size:14px;text-align:center;margin:8px 0}
+        table{width:100%;font-size:13px;border-collapse:collapse}
+        td{padding:6px 4px;vertical-align:top}
+        thead td{font-weight:700;padding-bottom:8px}
+        /* column widths: product flexible, others fixed */
+        td:nth-child(1){width:56%;}
+        td:nth-child(2){width:14%;text-align:center}
+        td:nth-child(3){width:15%;text-align:right}
+        td:nth-child(4){width:15%;text-align:right}
+        .right{text-align:right}
+        .tot{border-top:1px dashed #ccc;margin-top:10px;padding-top:10px;font-weight:700}
+        .footer{font-size:10px;color:#555;margin-top:10px}
+        .note{color:#a00;font-weight:600;font-size:11px}
+      </style>
+      </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
+      <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
+      <div class="tot"><div style="display:flex;justify-content:space-between">SUBTOTAL<span>${subtotal.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
+      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
+      <script>window.onload=function(){setTimeout(()=>window.print(),200)}</script></body></html>`
+
+    const w = window.open('', '_blank', 'width=420,height=800')
+    if (!w) { console.warn('No se pudo abrir ventana de impresión') ; return }
+    w.document.open()
+    w.document.write(html)
+    w.document.close()
+  } catch (e) { console.error('Error generando boleta', e) }
 }
 
 // types: using any for now to match project style
@@ -25,8 +78,9 @@ export default function VentasPage() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null)
   const [searchCategory, setSearchCategory] = useState<string>('')
   const [editingItem, setEditingItem] = useState<number | null>(null)
-  const [editCantidad, setEditCantidad] = useState<number>(1)
-  const [editPrecio, setEditPrecio] = useState<number>(0)
+  // keep edit fields as strings while typing to avoid Number('') => 0 behaviour
+  const [editCantidad, setEditCantidad] = useState<string>('1')
+  const [editPrecio, setEditPrecio] = useState<string>('0')
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({})
 
   useEffect(() => {
@@ -171,21 +225,24 @@ export default function VentasPage() {
 
   function startEditingItem(index: number) {
     setEditingItem(index)
-    setEditCantidad(cart[index].cantidad)
-    setEditPrecio(cart[index].precioUnitario)
+    setEditCantidad(String(cart[index].cantidad))
+    setEditPrecio(String(cart[index].precioUnitario))
   }
 
   function saveEditedItem() {
     if (editingItem === null) return
-    
-    if (!validateCartItem(editingItem, editCantidad, editPrecio)) {
+    // parse numbers from edit strings
+    const cantidadNum = Number(editCantidad)
+    const precioNum = Number(editPrecio)
+
+    if (!validateCartItem(editingItem, cantidadNum, precioNum)) {
       showNotification('error', 'Valores inválidos')
       return
     }
 
     setCart(prev => prev.map((item, i) => 
       i === editingItem 
-        ? { ...item, cantidad: editCantidad, precioUnitario: editPrecio }
+        ? { ...item, cantidad: cantidadNum, precioUnitario: precioNum }
         : item
     ))
     
@@ -285,10 +342,10 @@ export default function VentasPage() {
       return
     }
 
-    setProcessingPayment(true)
-    const subtotal = calcularSubtotal()
-    const iva = calcularIVA(subtotal)
-    const total = subtotal + iva
+  setProcessingPayment(true)
+  const subtotal = calcularSubtotal()
+  const iva = 0 // IVA removed
+  const total = subtotal
 
     function resolveUsuarioFromStorage(): { usuarioId: number | null; token: string | null } {
       const hasWindow = typeof globalThis !== 'undefined' && (globalThis as any).localStorage !== undefined
@@ -344,7 +401,7 @@ export default function VentasPage() {
       usuarioId: Number(usuarioId),
       metodoPago: String(metodoPago),
       subtotal: Math.round(Number(subtotal)),
-      iva: Math.round(Number(iva)),
+      iva: 0,
       total: Math.round(Number(total)),
       detalles: cart.map((it: any) => ({
         productoId: Number(it.productoId),
@@ -355,9 +412,11 @@ export default function VentasPage() {
     }
 
     try {
-      const res = await confirmarVenta(payload)
-      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
-      setCart([])
+  const res = await confirmarVenta(payload)
+  showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
+  // Generate and trigger boleta print immediately
+  try { generarBoletaVenta(cart, res?.id) } catch (e) { console.error('Error al generar boleta', e) }
+  setCart([])
       
       // Opcional: redirigir o mostrar recibo
       setTimeout(() => {
@@ -590,7 +649,7 @@ export default function VentasPage() {
                                 <input
                                   type="number"
                                   value={editCantidad}
-                                  onChange={(e) => setEditCantidad(Number(e.target.value))}
+                                  onChange={(e) => setEditCantidad(e.target.value)}
                                   min="1"
                                   className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-lg focus:border-blue-500 focus:outline-none"
                                 />
@@ -600,7 +659,7 @@ export default function VentasPage() {
                                 <input
                                   type="number"
                                   value={editPrecio}
-                                  onChange={(e) => setEditPrecio(Number(e.target.value))}
+                                  onChange={(e) => setEditPrecio(e.target.value)}
                                   min="0"
                                   className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-lg focus:border-blue-500 focus:outline-none"
                                 />
@@ -690,10 +749,7 @@ export default function VentasPage() {
                     <span className="text-gray-700">Subtotal:</span>
                     <span className="font-semibold text-gray-800">${calcularSubtotal().toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-700">IVA (19%):</span>
-                    <span className="font-semibold text-gray-800">${calcularIVA(calcularSubtotal()).toLocaleString()}</span>
-                  </div>
+                  {/* IVA row removed (was showing $0) */}
                   <div className="flex justify-between text-2xl border-t-2 border-gray-300 pt-3">
                     <span className="font-bold text-gray-900">TOTAL:</span>
                     <span className="font-bold text-green-600">
