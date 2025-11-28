@@ -58,7 +58,7 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       <script>window.onload=function(){setTimeout(()=>window.print(),200)}</script></body></html>`
 
     const w = window.open('', '_blank', 'width=420,height=800')
-    if (!w) { console.warn('No se pudo abrir ventana de impresión') ; return }
+    if (!w) { console.warn('No se pudo abrir ventana de impresión'); return }
     w.document.open()
     w.document.write(html)
     w.document.close()
@@ -82,6 +82,10 @@ export default function VentasPage() {
   const [editCantidad, setEditCantidad] = useState<string>('1')
   const [editPrecio, setEditPrecio] = useState<string>('0')
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({})
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showFiadoModal, setShowFiadoModal] = useState(false)
+  const [clienteNombre, setClienteNombre] = useState('')
+  const [fechaVencimiento, setFechaVencimiento] = useState('')
 
   useEffect(() => {
     fetchProductos()
@@ -127,18 +131,18 @@ export default function VentasPage() {
     // normalize product id: backend shape may vary (id | productoId | idProducto | _id)
     const pid = producto?.id ?? producto?.productoId ?? producto?.idProducto ?? producto?._id ?? null
     const stockDisponible = producto?.stock ?? 0
-    
+
     console.log('[VENTAS] addToCart called', { producto, resolvedId: pid, loteId, stock: stockDisponible })
-    
+
     // Validar stock disponible
     if (stockDisponible <= 0) {
       showNotification('error', `Sin stock disponible para ${producto?.nombre || 'este producto'}`)
       return
     }
-    
+
     setCart(prev => {
       const existing = prev.find((p: any) => p.productoId === pid && p.idLote === loteId)
-      
+
       if (existing) {
         // Verificar que no exceda el stock al incrementar
         const nuevaCantidad = existing.cantidad + 1
@@ -148,7 +152,7 @@ export default function VentasPage() {
         }
         return prev.map(p => p === existing ? { ...p, cantidad: nuevaCantidad } : p)
       }
-      
+
       // Nuevo item en carrito
       return [...prev, {
         productoId: pid,
@@ -165,12 +169,12 @@ export default function VentasPage() {
     setCart(prev => prev.map((item, i) => {
       if (i === index) {
         const newCantidad = item.cantidad + delta
-        
+
         // No permitir cantidad menor a 1
         if (newCantidad < 1) {
           return item
         }
-        
+
         // Validar stock disponible si se está incrementando
         if (delta > 0 && item.stockDisponible) {
           if (newCantidad > item.stockDisponible) {
@@ -178,7 +182,7 @@ export default function VentasPage() {
             return item
           }
         }
-        
+
         validateCartItem(i, newCantidad, item.precioUnitario)
         return { ...item, cantidad: newCantidad }
       }
@@ -198,26 +202,26 @@ export default function VentasPage() {
   function validateCartItem(index: number, cantidad: number, precio: number): boolean {
     const item = cart[index]
     const errors: Record<number, string> = { ...validationErrors }
-    
+
     if (cantidad <= 0) {
       errors[index] = 'La cantidad debe ser mayor a 0'
       setValidationErrors(errors)
       return false
     }
-    
+
     if (precio <= 0) {
       errors[index] = 'El precio debe ser mayor a 0'
       setValidationErrors(errors)
       return false
     }
-    
+
     // Validar stock disponible
     if (item?.stockDisponible && cantidad > item.stockDisponible) {
       errors[index] = `Stock insuficiente. Disponible: ${item.stockDisponible} unidades`
       setValidationErrors(errors)
       return false
     }
-    
+
     delete errors[index]
     setValidationErrors(errors)
     return true
@@ -240,12 +244,12 @@ export default function VentasPage() {
       return
     }
 
-    setCart(prev => prev.map((item, i) => 
-      i === editingItem 
+    setCart(prev => prev.map((item, i) =>
+      i === editingItem
         ? { ...item, cantidad: cantidadNum, precioUnitario: precioNum }
         : item
     ))
-    
+
     setEditingItem(null)
     showNotification('success', 'Producto actualizado')
   }
@@ -261,7 +265,7 @@ export default function VentasPage() {
   async function handleAdvancedSearch() {
     try {
       setLoading(true)
-      
+
       if (searchCategory) {
         // Buscar por categoría
         const categoriaObj = categorias.find(c => c.nombre === searchCategory)
@@ -288,10 +292,10 @@ export default function VentasPage() {
   // Función helper para búsqueda automática al cambiar categoría
   async function handleCategoryChange(newCategory: string) {
     setSearchCategory(newCategory)
-    
+
     try {
       setLoading(true)
-      
+
       if (newCategory) {
         // Si hay categoría seleccionada, buscar con ella
         const categoriaObj = categorias.find(c => c.nombre === newCategory)
@@ -323,7 +327,7 @@ export default function VentasPage() {
     fetchProductos()
   }
 
-  async function handleConfirm(metodoPago: string) {
+  async function handleConfirm(metodoPago: string, esFiado: boolean = false, clienteId?: number | null, fechaVencimientoPago?: string | null) {
     if (cart.length === 0) {
       showNotification('warning', 'El carrito está vacío')
       return
@@ -342,10 +346,10 @@ export default function VentasPage() {
       return
     }
 
-  setProcessingPayment(true)
-  const subtotal = calcularSubtotal()
-  const iva = 0 // IVA removed
-  const total = subtotal
+    setProcessingPayment(true)
+    const subtotal = calcularSubtotal()
+    const iva = 0 // IVA removed
+    const total = subtotal
 
     function resolveUsuarioFromStorage(): { usuarioId: number | null; token: string | null } {
       const hasWindow = typeof globalThis !== 'undefined' && (globalThis as any).localStorage !== undefined
@@ -397,12 +401,15 @@ export default function VentasPage() {
 
     const usuarioId = Number(resolved.usuarioId)
 
-    const payload = {
+    const payload: any = {
       usuarioId: Number(usuarioId),
-      metodoPago: String(metodoPago),
+      metodoPago: esFiado ? null : String(metodoPago),
       subtotal: Math.round(Number(subtotal)),
       iva: 0,
       total: Math.round(Number(total)),
+      fiado: esFiado,
+      clienteId: clienteId || null,
+      fechaVencimientoPago: fechaVencimientoPago || null,
       detalles: cart.map((it: any) => ({
         productoId: Number(it.productoId),
         cantidad: Math.round(Number(it.cantidad)),
@@ -412,26 +419,26 @@ export default function VentasPage() {
     }
 
     try {
-  const res = await confirmarVenta(payload)
-  showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
-  // Generate and trigger boleta print immediately
-  try { generarBoletaVenta(cart, res?.id) } catch (e) { console.error('Error al generar boleta', e) }
-  setCart([])
-      
+      const res = await confirmarVenta(payload)
+      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
+      // Generate and trigger boleta print immediately
+      try { generarBoletaVenta(cart, res?.id) } catch (e) { console.error('Error al generar boleta', e) }
+      setCart([])
+
       // Opcional: redirigir o mostrar recibo
       setTimeout(() => {
         // router.push('/ventas/historial')
       }, 2000)
     } catch (err: any) {
       console.error('Error confirmar venta', err.message)
-      
+
       // Detectar error de stock insuficiente
       const errorMsg = err.message || String(err)
       if (errorMsg.includes('Stock insuficiente') || errorMsg.includes('stock')) {
         const productoConError = errorMsg.match(/producto (\d+)/)?.[1]
         if (productoConError) {
           const itemError = cart.find((item: any) => String(item.productoId) === productoConError)
-          showNotification('error', 
+          showNotification('error',
             `❌ Stock insuficiente para "${itemError?.nombre || 'este producto'}". ` +
             `Puede que el producto tenga stock general pero sin lotes activos disponibles. ` +
             `Verifique en el módulo de Inventario.`
@@ -451,13 +458,12 @@ export default function VentasPage() {
     <main className="min-h-screen bg-gray-50 p-4">
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in border-2 ${
-          notification.type === 'success' 
-            ? 'bg-green-500 text-white border-green-600' 
-            : notification.type === 'warning'
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in border-2 ${notification.type === 'success'
+          ? 'bg-green-500 text-white border-green-600'
+          : notification.type === 'warning'
             ? 'bg-yellow-500 text-white border-yellow-600'
             : 'bg-red-500 text-white border-red-600'
-        }`}>
+          }`}>
           {notification.type === 'success' ? (
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -481,7 +487,7 @@ export default function VentasPage() {
           <div className="col-span-5 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Catálogo de Productos</h2>
-              
+
               {/* Búsqueda Avanzada */}
               <div className="space-y-3 mb-4">
                 <div className="flex gap-2">
@@ -540,16 +546,15 @@ export default function VentasPage() {
                     const stock = producto.stock || 0
                     const sinStock = stock === 0
                     const stockBajo = stock > 0 && stock <= 5
-                    
+
                     return (
                       <div
                         key={pid}
                         onClick={() => !sinStock && addToCart(producto, null)}
-                        className={`p-4 border-2 rounded-lg transition-all ${
-                          sinStock 
-                            ? 'border-red-300 bg-red-50 cursor-not-allowed opacity-60' 
-                            : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
-                        }`}
+                        className={`p-4 border-2 rounded-lg transition-all ${sinStock
+                          ? 'border-red-300 bg-red-50 cursor-not-allowed opacity-60'
+                          : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                          }`}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -575,9 +580,8 @@ export default function VentasPage() {
                             <p className={`text-xl font-bold ${sinStock ? 'text-gray-400' : 'text-green-600'}`}>
                               ${(producto.precio || 0).toLocaleString()}
                             </p>
-                            <p className={`text-sm font-semibold ${
-                              sinStock ? 'text-red-600' : stockBajo ? 'text-yellow-600' : 'text-gray-500'
-                            }`}>
+                            <p className={`text-sm font-semibold ${sinStock ? 'text-red-600' : stockBajo ? 'text-yellow-600' : 'text-gray-500'
+                              }`}>
                               Stock: {stock}
                             </p>
                           </div>
@@ -595,7 +599,7 @@ export default function VentasPage() {
             {/* Scanner de Código de Barras */}
             <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 shadow-md">
               <h3 className="text-lg font-bold text-blue-900 mb-3">Escanear Código de Barras</h3>
-              <ScanProductoInput 
+              <ScanProductoInput
                 onProductFound={handleProductoScanned}
                 onError={handleScanError}
               />
@@ -635,9 +639,8 @@ export default function VentasPage() {
                     {cart.map((item, index) => (
                       <div
                         key={index}
-                        className={`p-4 border-2 rounded-lg ${
-                          validationErrors[index] ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
-                        }`}
+                        className={`p-4 border-2 rounded-lg ${validationErrors[index] ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
+                          }`}
                       >
                         {editingItem === index ? (
                           // Modo Edición
@@ -757,31 +760,15 @@ export default function VentasPage() {
                     </span>
                   </div>
 
-                  {/* Botones de Pago */}
-                  <div className="grid grid-cols-3 gap-3 mt-6">
+                  {/* Botón de Pago */}
+                  <div className="mt-6">
                     <button
                       disabled={processingPayment || Object.keys(validationErrors).length > 0}
-                      onClick={() => handleConfirm('EFECTIVO')}
-                      className="px-6 py-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-lg shadow-lg flex items-center justify-center gap-2"
+                      onClick={() => setShowPaymentModal(true)}
+                      className="w-full px-6 py-5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all text-2xl shadow-xl flex items-center justify-center gap-3"
                     >
-                      {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                      Efectivo
-                    </button>
-                    <button
-                      disabled={processingPayment || Object.keys(validationErrors).length > 0}
-                      onClick={() => handleConfirm('DEBITO')}
-                      className="px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-lg shadow-lg flex items-center justify-center gap-2"
-                    >
-                      {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                      Débito
-                    </button>
-                    <button
-                      disabled={processingPayment || Object.keys(validationErrors).length > 0}
-                      onClick={() => handleConfirm('TRANSFERENCIA')}
-                      className="px-6 py-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-lg shadow-lg flex items-center justify-center gap-2"
-                    >
-                      {processingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                      Transferencia
+                      {processingPayment ? <Loader2 className="w-6 h-6 animate-spin" /> : null}
+                      💳 PAGAR
                     </button>
                   </div>
 
@@ -798,6 +785,187 @@ export default function VentasPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Selección de Método de Pago */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl border-2 border-gray-200">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-t-lg">
+              <h3 className="text-2xl font-bold">Seleccionar Método de Pago</h3>
+              <p className="text-green-100 text-sm mt-1">Total a pagar: ${calcularSubtotal().toLocaleString()}</p>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Efectivo */}
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    handleConfirm('EFECTIVO')
+                  }}
+                  className="group relative overflow-hidden p-6 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-2 border-green-300 hover:border-green-500 rounded-xl transition-all shadow-md hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-3xl">
+                      💵
+                    </div>
+                    <span className="text-xl font-bold text-green-800">Efectivo</span>
+                  </div>
+                </button>
+
+                {/* Débito */}
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    handleConfirm('DEBITO')
+                  }}
+                  className="group relative overflow-hidden p-6 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-2 border-blue-300 hover:border-blue-500 rounded-xl transition-all shadow-md hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-3xl">
+                      💳
+                    </div>
+                    <span className="text-xl font-bold text-blue-800">Débito</span>
+                  </div>
+                </button>
+
+                {/* Transferencia */}
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    handleConfirm('TRANSFERENCIA')
+                  }}
+                  className="group relative overflow-hidden p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 border-2 border-yellow-300 hover:border-yellow-500 rounded-xl transition-all shadow-md hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-3xl">
+                      🏦
+                    </div>
+                    <span className="text-xl font-bold text-yellow-800">Transferencia</span>
+                  </div>
+                </button>
+
+                {/* Fiado */}
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    setShowFiadoModal(true)
+                  }}
+                  className="group relative overflow-hidden p-6 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-300 hover:border-orange-500 rounded-xl transition-all shadow-md hover:shadow-xl"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-3xl">
+                      📝
+                    </div>
+                    <span className="text-xl font-bold text-orange-800">Fiado</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Fiado */}
+      {showFiadoModal && (
+        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4 rounded-t-lg">
+              <h3 className="text-xl font-bold">Registrar Venta Fiada</h3>
+              <p className="text-orange-100 text-sm mt-1">Complete los datos del cliente</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Nombre del Cliente *
+                </label>
+                <input
+                  type="text"
+                  value={clienteNombre}
+                  onChange={(e) => setClienteNombre(e.target.value)}
+                  placeholder="Ingrese nombre del cliente"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Fecha de Vencimiento (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={fechaVencimiento}
+                  onChange={(e) => setFechaVencimiento(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                <p className="text-sm text-orange-800 font-semibold">Total a Fiar:</p>
+                <p className="text-3xl font-bold text-orange-600 mt-1">
+                  ${calcularSubtotal().toLocaleString()}
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Nota:</strong> El nombre del cliente se registrará para referencia.
+                  Cuando se implemente el módulo de clientes, podrá asociarse correctamente.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex gap-3">
+              <button
+                onClick={() => {
+                  setShowFiadoModal(false)
+                  setClienteNombre('')
+                  setFechaVencimiento('')
+                }}
+                className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!clienteNombre.trim()) {
+                    showNotification('error', 'Debe ingresar el nombre del cliente')
+                    return
+                  }
+
+                  // Convertir fecha a formato dd/MM/yyyy si existe
+                  let fechaFormateada = null
+                  if (fechaVencimiento) {
+                    const [year, month, day] = fechaVencimiento.split('-')
+                    fechaFormateada = `${day}/${month}/${year}`
+                  }
+
+                  setShowFiadoModal(false)
+                  // Por ahora usamos clienteId null ya que no tenemos módulo de clientes
+                  // El backend guardará el nombre en la descripción o se puede crear el cliente
+                  await handleConfirm('FIADO', true, null, fechaFormateada)
+                  setClienteNombre('')
+                  setFechaVencimiento('')
+                }}
+                disabled={!clienteNombre.trim()}
+                className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+              >
+                Confirmar Fiado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

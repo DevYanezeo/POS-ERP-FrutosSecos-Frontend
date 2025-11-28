@@ -82,9 +82,27 @@ export async function eliminarVenta(id: number) {
   return true
 }
 
+export async function listarFiados(pendientesOnly: boolean = true) {
+  return fetchWithAuth(`${API_BASE}/api/ventas/fiados?pendientesOnly=${pendientesOnly}`)
+}
+
+export async function obtenerPagos(ventaId: number) {
+  return fetchWithAuth(`${API_BASE}/api/ventas/${ventaId}/pagos`)
+}
+
+export async function registrarPago(ventaId: number, pagoRequest: any) {
+  return fetchWithAuth(`${API_BASE}/api/ventas/${ventaId}/pagos`, {
+    method: 'POST',
+    body: JSON.stringify(pagoRequest),
+  })
+}
+
 export default {
   listarVentas,
   obtenerVenta,
   confirmarVenta,
   eliminarVenta,
+  listarFiados,
+  obtenerPagos,
+  registrarPago,
 }

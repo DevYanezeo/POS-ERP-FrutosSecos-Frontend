@@ -50,11 +50,11 @@ export default function HistorialVentasPage() {
   async function fetchVentasDelMes() {
     try {
       setLoading(true)
-      
+
       // Obtener primer y último día del mes
       const firstDay = new Date(year, month, 1)
       const lastDay = new Date(year, month + 1, 0)
-      
+
       // Convertir a formato dd/MM/yyyy (requerido por backend)
       const startDate = formatDateToDDMMYYYY(firstDay)
       const endDate = formatDateToDDMMYYYY(lastDay)
@@ -80,14 +80,14 @@ export default function HistorialVentasPage() {
       }
 
       const ventas: Venta[] = await response.json()
-      
+
       // Agrupar ventas por día
       const ventasAgrupadas: VentasPorDia = {}
-      
+
       ventas.forEach(venta => {
         const fechaVenta = new Date(venta.fecha)
         const dia = fechaVenta.getDate()
-        
+
         if (!ventasAgrupadas[dia]) {
           ventasAgrupadas[dia] = {
             efectivo: 0,
@@ -97,10 +97,10 @@ export default function HistorialVentasPage() {
             ventas: []
           }
         }
-        
+
         ventasAgrupadas[dia].ventas.push(venta)
         ventasAgrupadas[dia].total += venta.total
-        
+
         if (venta.metodoPago === 'EFECTIVO') {
           ventasAgrupadas[dia].efectivo += venta.total
         } else if (venta.metodoPago === 'DEBITO') {
@@ -109,7 +109,7 @@ export default function HistorialVentasPage() {
           ventasAgrupadas[dia].transferencia += venta.total
         }
       })
-      
+
       setVentasPorDia(ventasAgrupadas)
     } catch (error: any) {
       console.error('Error fetchVentasDelMes:', error.message)
@@ -173,12 +173,20 @@ export default function HistorialVentasPage() {
                 <p className="text-gray-600">Registro contable mensual</p>
               </div>
             </div>
-            <button
-              onClick={() => router.push('/ventas')}
-              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              Ir a Ventas
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/ventas/fiados')}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Ver Fiados
+              </button>
+              <button
+                onClick={() => router.push('/ventas')}
+                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Ir a Ventas
+              </button>
+            </div>
           </div>
 
           {/* Navegación de mes */}
@@ -255,22 +263,20 @@ export default function HistorialVentasPage() {
               Array.from({ length: daysInMonth }, (_, i) => i + 1).map(dia => {
                 const dataDia = ventasPorDia[dia]
                 const hasVentas = !!dataDia && dataDia.ventas.length > 0
-                const isToday = new Date().getDate() === dia && 
-                               new Date().getMonth() === month && 
-                               new Date().getFullYear() === year
+                const isToday = new Date().getDate() === dia &&
+                  new Date().getMonth() === month &&
+                  new Date().getFullYear() === year
 
                 return (
                   <div
                     key={dia}
-                    className={`grid grid-cols-5 border-b border-gray-200 text-center transition-all ${
-                      hasVentas 
-                        ? 'hover:bg-blue-50' 
+                    className={`grid grid-cols-5 border-b border-gray-200 text-center transition-all ${hasVentas
+                        ? 'hover:bg-blue-50'
                         : 'bg-gray-50'
-                    } ${isToday ? 'bg-yellow-50 border-yellow-300 border-2' : ''}`}
+                      } ${isToday ? 'bg-yellow-50 border-yellow-300 border-2' : ''}`}
                   >
-                    <div className={`p-4 border-r border-gray-200 font-semibold ${
-                      hasVentas ? 'text-blue-600' : 'text-gray-400'
-                    }`}>
+                    <div className={`p-4 border-r border-gray-200 font-semibold ${hasVentas ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
                       <div className="flex flex-col items-center justify-center gap-2">
                         <span className="text-lg">{dia}</span>
                         <p className="text-xs text-gray-500">
@@ -296,9 +302,8 @@ export default function HistorialVentasPage() {
                     <div className="p-4 border-r border-gray-200 text-gray-700 font-semibold text-lg">
                       {dataDia ? `$${dataDia.transferencia.toLocaleString()}` : '-'}
                     </div>
-                    <div className={`p-4 font-bold text-xl ${
-                      hasVentas ? 'text-gray-900' : 'text-gray-300'
-                    }`}>
+                    <div className={`p-4 font-bold text-xl ${hasVentas ? 'text-gray-900' : 'text-gray-300'
+                      }`}>
                       {dataDia ? `$${dataDia.total.toLocaleString()}` : '-'}
                     </div>
                   </div>
