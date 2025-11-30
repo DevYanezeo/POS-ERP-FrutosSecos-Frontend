@@ -26,9 +26,9 @@ export default function DashboardPage() {
   const fechaHoyStr = getFechaHoy()
 
   return (
-    <div className="min-h-screen bg-white">
-      <main className="max-w-6xl mx-auto p-6">
-        <div className="rounded-md bg-white p-6 shadow-sm mb-6">
+    <div className="min-h-screen bg-[#F9F6F3] ">
+      <main className="max-w-6xl mx-auto p-6 ">
+        <div className="rounded-md bg-[#F9F6F3] p-6  mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold">¡Bienvenid@ {localStorage.getItem("user_nombre")}! <span className="ml-2">👋</span></h1>
@@ -49,7 +49,7 @@ export default function DashboardPage() {
               <div className="text-xs text-[#7A6F66] mt-1">12 productos únicos</div>
             </div>
             <div className="bg-white p-4 rounded-md border shadow-sm">
-              <div className="text-sm text-[#7A6F66]">Ticket Promedio</div>
+              <div className="text-sm text-[#7A6F66]">Venta Promedio</div>
               <div className="text-xl font-bold mt-2">$8,950</div>
               <div className="text-xs text-[#7A6F66] mt-1">14 transacciones</div>
             </div>

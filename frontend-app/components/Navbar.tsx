@@ -1,7 +1,7 @@
 "use client"
 
 import Image from 'next/image'
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, Home, ShoppingCart, Box, Clock, BarChart2, Settings } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import StockAlert from '@/app/dashboard/components/StockAlert'
 
@@ -47,11 +47,44 @@ export default function Navbar() {
 
         {/* Navegación central con más espacio */}
         <nav className="hidden md:flex items-center gap-6">
-          <button onClick={() => router.push('/')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInicio ? 'bg-[#9A5128] text-white font-semibold shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inicio</button>
-          <button onClick={() => router.push('/inventario')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInventario ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inventario</button>
-          <button onClick={() => router.push('/ventas')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isVentas ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Ventas</button>
-          <button onClick={() => router.push('/ventas/historial')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isHistorial ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Historial</button>
-          <button onClick={() => router.push('/finanzas')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isFinanzas ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Finanzas</button>
+          {/* barra de navegación central: alto fijo para que los botones puedan ocupar toda la altura */}
+          <main className="h-12 flex items-center shadow gap-4 bg-[#F5EDE4] rounded-xl px-0">
+            <button
+              onClick={() => router.push('/')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isInicio ? 'bg-[#9A5128] text-white font-semibold shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Home className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Inicio</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/inventario')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isInventario ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Box className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Inventario</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/ventas')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isVentas ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Ventas</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/ventas/historial')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isHistorial ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Clock className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Historial</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/finanzas')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isFinanzas ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <BarChart2 className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Finanzas</span>
+            </button>
+
+          </main>
         </nav>
 
         {/* Acciones a la derecha */}

@@ -193,14 +193,14 @@ export default function Alerts() {
   // - Cada sección muestra errores, estado vacío o una tira horizontal de tarjetas
   // -----------------------
   return (
-    <main className="rounded-md bg-white p-6 shadow-sm">
+    <main className="bg-[#F9F6F3] p-6  ">
       {/* Título de la página de notificaciones */}
-      <h1 className="text-2xl font-bold mb-4">🔔 Notificaciones</h1>
+      <p className="text-xl font-bold mb-4">🔔 Notificaciones</p>
 
       {/* Contenedor principal: en pantallas grandes muestra dos columnas */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* ------------------ SECCIÓN: STOCK BAJO ------------------ */}
-        <section className="flex-1 min-w-0 rounded-md bg-[#FDF6E6] p-3 shadow border border-[#F1E6DE]">
+        <section className="flex-1 min-w-0 rounded-md bg-white p-3 shadow border border-[#F1E6DE]">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold flex items-center gap-3">⚠️ Stock Bajo</h2>
             <div className="text-sm text-[#7A6F66]">{loading ? 'Cargando...' : `${bajoStock.length} alerta(s)`}</div>
@@ -266,7 +266,7 @@ export default function Alerts() {
         </section>
 
         {/* ------------------ SECCIÓN: VENCIMIENTOS ------------------ */}
-        <section className="flex-1 min-w-0 rounded-md bg-[#FEF5F0] p-3 shadow border border-[#F1E6DE]">
+        <section className="flex-1 min-w-0 rounded-md bg-white p-3 shadow border border-[#F1E6DE]">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold flex items-center gap-3">🗓️ Alertas de vencimiento</h2>
             <div className="text-sm text-[#7A6F66]">{loadingVenc ? 'Cargando...' : `${vencimientos.length} lote(s)`}</div>
