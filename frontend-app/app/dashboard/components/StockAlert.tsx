@@ -7,7 +7,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { toast } from '@/hooks/use-toast'
 import { findLotesVencimientoProximoDTO } from '@/lib/lotes'
 import { getProductosStockBajo } from '@/lib/productos'
-
 type Producto = {
   idProducto: number
   nombre: string

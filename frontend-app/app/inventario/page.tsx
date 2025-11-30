@@ -360,7 +360,7 @@ export default function InventarioPage() {
         </div>
 
         {/* Controls Bar - botones a la misma altura del buscador */}
-        <div className="bg-white border border-[#F5EDE4] rounded-xl p-6 shadow-md">
+        <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-sm border border-[#F5EDE4] rounded-xl p-6 shadow-md">
           <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
             {/* Search - lado izquierdo */}
             <div className="flex items-center gap-4 flex-1 max-w-lg">

@@ -22,6 +22,7 @@ export default function Navbar() {
   const isInventario = pathname?.startsWith('/inventario')
   const isVentas = pathname === '/ventas' && !pathname?.includes('/historial')
   const isHistorial = pathname?.startsWith('/ventas/historial')
+  const isFinanzas = pathname === '/finanzas'
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -33,7 +34,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="border-b bg-[#FBF7F4]">
+    <header className="sticky top-0 z-50 border-b bg-[#FBF7F4]">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
         {/* Logo a la izquierda - más grande */}
         <div className="flex items-center gap-4">
@@ -46,10 +47,11 @@ export default function Navbar() {
 
         {/* Navegación central con más espacio */}
         <nav className="hidden md:flex items-center gap-6">
-          <button onClick={() => router.push('/')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInicio ? 'bg-white text-[#7A6F66] font-semibold shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inicio</button>
-          <button onClick={() => router.push('/inventario')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInventario ? 'bg-blue-500 text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inventario</button>
-          <button onClick={() => router.push('/ventas')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isVentas ? 'bg-blue-500 text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Ventas</button>
-          <button onClick={() => router.push('/ventas/historial')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isHistorial ? 'bg-green-500 text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Historial</button>
+          <button onClick={() => router.push('/')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInicio ? 'bg-[#9A5128] text-white font-semibold shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inicio</button>
+          <button onClick={() => router.push('/inventario')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isInventario ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Inventario</button>
+          <button onClick={() => router.push('/ventas')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isVentas ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Ventas</button>
+          <button onClick={() => router.push('/ventas/historial')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isHistorial ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Historial</button>
+          <button onClick={() => router.push('/finanzas')} className={`px-4 py-2 rounded text-base font-medium transition-colors ${isFinanzas ? 'bg-[#9A5128] text-white shadow-sm' : 'text-[#7A6F66] hover:bg-white'}`}>Finanzas</button>
         </nav>
 
         {/* Acciones a la derecha */}
@@ -69,6 +71,9 @@ export default function Navbar() {
                 Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
+            <div className="text-base font-bold">
+              {localStorage.getItem('user_nombre') || 'Invitado'}
+            </div>
           </DropdownMenu>
         </div>
       </div>

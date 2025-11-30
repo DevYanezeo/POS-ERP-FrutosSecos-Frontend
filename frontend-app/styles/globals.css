@@ -123,3 +123,58 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Scroll horizontal sutil para tiras de notificaciones
+   - Oculto por defecto (thumb transparente) y visible al hacer hover
+   - Thumb muy delgado y semi-transparente para integración estética
+   - Compatibilidad WebKit + Firefox
+*/
+.horizontal-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; /* Firefox: make it thin */
+  scrollbar-color: rgba(0,0,0,0.12) transparent; /* thumb, track */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+.horizontal-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Thumb starts mostly transparent and becomes visible on hover */
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.08);
+  border-radius: 9999px;
+  transition: background-color 150ms ease, opacity 150ms ease;
+  opacity: 0; /* hide by default */
+}
+
+.horizontal-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  opacity: 1;
+}
+
+/* Firefox: keep thin and low-contrast, stronger on hover via color change */
+.horizontal-scroll:hover {
+  scrollbar-color: rgba(0,0,0,0.18) transparent;
+}
+
+/* Edge case: visible for keyboard focus (accessibility) */
+.horizontal-scroll:focus {
+  scrollbar-color: rgba(0,0,0,0.18) transparent;
+}
+
+/* Gradientes de borde para indicar que hay más contenido a izquierda/derecha */
+.scroll-fade-left {
+  background: linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+.scroll-fade-right {
+  background: linear-gradient(270deg, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+/* En temas oscuros o colores de fondo diferentes, usar variables si es necesario.
+   Las clases anteriores son sencillas y funcionan con el fondo blanco de las tarjetas.
+*/
