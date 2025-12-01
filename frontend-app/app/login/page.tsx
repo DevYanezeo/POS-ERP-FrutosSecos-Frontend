@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { login } from "../../lib/api"
 import RegisterForm from '../../components/RegisterForm'
+import { initCsrfToken } from '../../lib/csrf'
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -42,7 +43,38 @@ export default function LoginPage() {
       localStorage.setItem('user_email', resp.email)
       localStorage.setItem('user_nombre', resp.nombre || '')
       localStorage.setItem('user_rol', resp.rol || '')
+      // backend now returns idUsuario; prefer that
+      try {
+        const respAny = resp as any
+        if (respAny.idUsuario || respAny.idUsuario === 0) {
+          localStorage.setItem('user_id', String(respAny.idUsuario))
+        } else {
+          // intentar extraer user id del token si el backend no lo devuelve explícitamente
+          try {
+            const parts = resp.token.split('.')
+            if (parts.length >= 2) {
+              const b64 = parts[1].replaceAll('-', '+').replaceAll('_', '/')
+              const pad = (4 - (b64.length % 4)) % 4
+              const decoded = JSON.parse(atob(b64 + '='.repeat(pad)))
+              const candidate = decoded.user_id || decoded.sub || decoded.id
+              if (candidate) localStorage.setItem('user_id', String(candidate))
+            }
+          } catch (e) {
+            console.debug('login: no se pudo extraer user_id del token', e)
+          }
+        }
+      } catch (e) {
+        console.debug('login: error guardando user_id', e)
+      }
       localStorage.setItem('isAuthenticated', 'true')
+      
+      // Obtener token CSRF después del login
+      try {
+        await initCsrfToken()
+      } catch (e) {
+        console.warn('No se pudo obtener token CSRF:', e)
+      }
+      
       router.push('/dashboard')
     } catch (err: any) {
       const msg = err?.message || err?.error || 'Error de autenticación'

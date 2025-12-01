@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
+import { toast } from '@/hooks/use-toast'
 import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
@@ -19,6 +20,7 @@ import EditProductDialog from "./components/EditProductDialog"
 import AddStockDialog from "./components/AddStockDialog"
 import RemoveStockDialog from "./components/RemoveStockDialog"
 import DeleteProductDialog from "./components/DeleteProductDialog"
+import PrintButton from "./components/PrintButton"
 
 export default function InventarioPage() {
   
@@ -56,6 +58,29 @@ export default function InventarioPage() {
   const [unidad, setUnidad] = useState("")
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
+  // state to keep selected variant (by id) for grouped display: key = product name
+  const [selectedVariantByName, setSelectedVariantByName] = useState<Record<string, number>>({})
+  // custom ordering of groups (by product name)
+  const [groupOrder, setGroupOrder] = useState<string[] | null>(null)
+
+  // Group productos by name -> { name, items: Product[] }
+  const groupProductsByName = (list: any[]) => {
+    const groups: any = {};
+    (list || []).forEach((p: any) => {
+      const name = p.name || p.nombre || 'Sin nombre'
+      if (!groups[name]) groups[name] = { name, items: [] }
+      groups[name].items.push(p)
+    })
+    // sort items within group by numeric unit (if possible)
+    for (const k in groups) {
+      groups[k].items.sort((a: any, b: any) => {
+        const an = Number(String(a.unit || '').replace(/[^0-9]/g, '')) || 0
+        const bn = Number(String(b.unit || '').replace(/[^0-9]/g, '')) || 0
+        return an - bn
+      })
+    }
+    return Object.values(groups)
+  }
 
   const mapProductos = (data: any[]) => (data || []).map((p: any) => {
     let unit = p.unidad || ''
@@ -143,7 +168,10 @@ export default function InventarioPage() {
   }
 
   const handleAdd = async () => {
-    if (!nombre) return alert('Nombre requerido')
+    if (!nombre) {
+      toast({ title: 'Nombre requerido', description: 'Debe especificar un nombre para el producto', variant: 'destructive' })
+      return
+    }
     setAdding(true)
     try {
       await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: 0 })
@@ -154,9 +182,9 @@ export default function InventarioPage() {
       setStockVal('')
       setShowAddForm(false)
       await fetchProductos()
-      alert('Producto agregado')
+  toast({ title: 'Producto agregado', description: 'El producto fue creado correctamente', variant: 'success' })
     } catch (e: any) {
-      alert(e?.message || 'Error agregando producto')
+      toast({ title: 'Error agregando producto', description: e?.message || 'Compruebe la información e intente de nuevo', variant: 'destructive' })
     } finally {
       setAdding(false)
     }
@@ -231,11 +259,93 @@ export default function InventarioPage() {
       return String(av).localeCompare(String(bv)) * dir
     })
 
-    setProductos(mapProductos(list))
+    const mapped = mapProductos(list)
+    setProductos(mapped)
+    // initialize group order if not present (keep stable across filter/sort re-applies)
+    try {
+      const groups = groupProductsByName(mapped).map((g:any) => g.name)
+      if (!groupOrder) {
+        // try load from localStorage first
+        const saved = typeof window !== 'undefined' ? window.localStorage.getItem('inventario_group_order') : null
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed)) setGroupOrder(parsed)
+          else setGroupOrder(groups)
+        } else {
+          setGroupOrder(groups)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   // Re-apply when filters/sort change
   useEffect(() => { applyFiltersAndSort() }, [sortBy, sortDir, filterCategoria, filterUnidad, filterPrecioMin, filterPrecioMax])
+
+  // Persist groupOrder to localStorage when updated
+  useEffect(() => {
+    if (!groupOrder) return
+    try {
+      if (typeof window !== 'undefined') window.localStorage.setItem('inventario_group_order', JSON.stringify(groupOrder))
+    } catch (e) {}
+  }, [groupOrder])
+
+  // Helper to return groups using the custom order if available
+  const getOrderedGroups = () => {
+    const groups: any[] = groupProductsByName(productos)
+    if (!groupOrder || !Array.isArray(groupOrder) || groupOrder.length === 0) return groups
+    const byName: Record<string, any> = {}
+    groups.forEach((g:any) => byName[g.name] = g)
+    const ordered: any[] = []
+    const used = new Set<string>()
+    for (const name of groupOrder) {
+      if (byName[name]) { ordered.push(byName[name]); used.add(name) }
+    }
+    // append any groups not present in saved order (new items / filters)
+    for (const g of groups) {
+      if (!used.has(g.name)) ordered.push(g)
+    }
+    return ordered
+  }
+
+  // Drag & drop handlers for reordering groups (HTML5 drag API)
+  const handleDragStart = (e: React.DragEvent, name: string) => {
+    try {
+      e.dataTransfer.setData('text/plain', name)
+      // set effect
+      e.dataTransfer.effectAllowed = 'move'
+      const el = e.currentTarget as HTMLElement
+      el.classList.add('opacity-70')
+    } catch (err) {}
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDropOn = (e: React.DragEvent, targetName: string) => {
+    e.preventDefault()
+    try {
+      const sourceName = e.dataTransfer.getData('text/plain')
+      if (!sourceName || sourceName === targetName) return
+      const currentOrder = groupOrder && groupOrder.length ? [...groupOrder] : groupProductsByName(productos).map((g:any) => g.name)
+      const srcIndex = currentOrder.indexOf(sourceName)
+      const tgtIndex = currentOrder.indexOf(targetName)
+      if (srcIndex === -1) return
+      // remove source
+      currentOrder.splice(srcIndex, 1)
+      // insert at target index
+      currentOrder.splice(tgtIndex, 0, sourceName)
+      setGroupOrder(currentOrder)
+    } catch (err) {}
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    const el = e.currentTarget as HTMLElement
+    el.classList.remove('opacity-70')
+  }
 
   return (
     <div className="min-h-screen p-6 bg-[#F9F6F3]">
@@ -250,7 +360,7 @@ export default function InventarioPage() {
         </div>
 
         {/* Controls Bar - botones a la misma altura del buscador */}
-        <div className="bg-white border border-[#F5EDE4] rounded-xl p-6 shadow-md">
+        <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-sm border border-[#F5EDE4] rounded-xl p-6 shadow-md">
           <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
             {/* Search - lado izquierdo */}
             <div className="flex items-center gap-4 flex-1 max-w-lg">
@@ -599,12 +709,20 @@ export default function InventarioPage() {
       ) : (
         <div className="max-w-[1700px] mx-auto px-8">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
-              {productos.map((product) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {getOrderedGroups().map((group: any) => {
+                const items: any[] = group.items
+                const selectedId = selectedVariantByName[group.name] || items[0]?.id
+                const product = items.find(it => it.id === selectedId) || items[0]
                 const stockNum = product.raw?.stock ?? 0
                 const isLowStock = stockNum <= 5
                 return (
-                <div key={product.id} className={`bg-white rounded-xl border transition-all duration-200 hover:shadow-lg ${isLowStock ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : 'border-[#F5EDE4] hover:border-[#A0522D]/30'}`} style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
+                <div key={group.name} draggable
+                  onDragStart={(e) => handleDragStart(e, group.name)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDropOn(e, group.name)}
+                  onDragEnd={handleDragEnd}
+                  className={`bg-white rounded-xl border transition-all duration-200 hover:shadow-lg overflow-hidden cursor-grab ${isLowStock ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : 'border-[#F5EDE4] hover:border-[#A0522D]/30'}`} style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
                   {/* Product Image */}
                   <div className="relative p-0">
                     {isLowStock && (
@@ -616,7 +734,7 @@ export default function InventarioPage() {
                     <div className="aspect-square rounded-t-xl overflow-hidden bg-[#FBF7F4] flex items-center justify-center">
                       <Image 
                         src={product.image} 
-                        alt={product.name} 
+                        alt={group.name} 
                         width={400} 
                         height={400} 
                         className="object-cover w-full h-full" 
@@ -624,66 +742,83 @@ export default function InventarioPage() {
                     </div>
                   </div>
                   
-                  {/* Product Info - aumentado padding interno y mejor alineación */}
-                  <div className="p-8 space-y-5">
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-[#2E2A26] text-lg leading-tight line-clamp-2 min-h-[3rem] flex items-end">{product.name}</h3>
-                      <p className="text-base text-[#7A6F66] bg-[#FBF7F4] inline-block px-3 py-1.5 rounded">{product.category}</p>
-                    </div>
-                    
-                    <div className="flex items-end justify-between">
-                      <p className="text-[#A0522D] font-bold text-2xl">{product.price}</p>
-                      <div className="text-right">
-                        <p className="text-base text-[#7A6F66]">{product.unit}</p>
-                        <p className={`text-lg font-medium ${isLowStock ? 'text-red-600' : 'text-[#2E2A26]'}`}>{product.stock}</p>
+                  {/* Product Info - group header + variant selector */}
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-[#2E2A26] text-lg leading-tight line-clamp-2 min-h-[3rem]">{group.name}</h3>
+                        <p className="text-sm text-[#7A6F66] mt-1">{product.category}</p>
                       </div>
+                      <div className="text-right">
+                        <p className="text-[#A0522D] font-bold text-2xl">{product.price}</p>
+                        <p className={`text-sm font-medium ${isLowStock ? 'text-red-600' : 'text-[#2E2A26]'}`}>{product.stock}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm text-[#7A6F66]">Presentación:</label>
+                      <select
+                        value={selectedId}
+                        onChange={(e) => setSelectedVariantByName(prev => ({ ...prev, [group.name]: Number(e.target.value) }))}
+                        className="px-3 py-2 border rounded bg-white text-sm"
+                      >
+                        {items.map(it => (
+                          <option key={it.id} value={it.id}>{it.unit} — {it.price}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  {/* Action Buttons - alineados con la base de la card */}
+                  {/* Action Buttons */}
                   <div className="p-5 pt-0 border-t border-[#F5EDE4]/50">
-                    <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 items-center">
                       <button 
-                        onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { alert(e?.message || 'Error cargando detalle') } }} 
-                        className="px-2 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                        onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e:any) { toast({ title: 'Error', description: e?.message || 'Error cargando detalle', variant: 'destructive' }) } }} 
+                        className="w-full px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
                         title="Ver detalles"
                       >
-                        <Eye className="w-3 h-3" />
+                        <Eye className="w-4 h-4" />
                         Ver
                       </button>
+
                       <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} 
-                        className="px-2 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                        className="w-full px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
                         title="Editar producto"
                       >
-                        <Edit className="w-3 h-3" />
+                        <Edit className="w-4 h-4" />
                         Editar
                       </button>
+
+                      <div className="w-full flex justify-center">
+                        <PrintButton productRaw={product.raw} />
+                      </div>
+
                       <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} 
-                        className="px-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                        title="Eliminar producto"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Eliminar
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} 
-                        className="px-2 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                        className="w-full px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
                         title="Agregar stock"
                       >
-                        <PlusCircle className="w-3 h-3" />
-                        + Stock
+                        <PlusCircle className="w-4 h-4" />
+                        Stock
                       </button>
+
                       <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message || 'Error cargando producto') } }} 
-                        className="px-2 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                        className="w-full px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
                         title="Quitar stock"
                       >
-                        <MinusCircle className="w-3 h-3" />
-                        - Stock
+                        <MinusCircle className="w-4 h-4" />
+                        Stock
+                      </button>
+
+                      <button 
+                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                        className="w-full px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                        title="Eliminar producto"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
                       </button>
                     </div>
                   </div>
@@ -710,18 +845,24 @@ export default function InventarioPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-[#F5EDE4]">
-                    {productos.map((p) => {
+                    {getOrderedGroups().map((group: any) => {
+                      const items: any[] = group.items
+                      const selectedId = selectedVariantByName[group.name] || items[0]?.id
+                      const p = items.find(it => it.id === selectedId) || items[0]
                       const stockNum = p.raw?.stock ?? 0
                       const isLowStock = stockNum <= 5
                       return (
-                      <tr key={p.id} className={`transition-colors ${isLowStock ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-[#FBF7F4]/50'}`}>
+                      <tr key={group.name} className={`transition-colors ${isLowStock ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-[#FBF7F4]/50'}`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-[#FBF7F4] flex items-center justify-center overflow-hidden">
-                              <Image src={p.image} alt={p.name} width={40} height={40} className="object-cover w-full h-full" />
+                              <Image src={p.image} alt={group.name} width={40} height={40} className="object-cover w-full h-full" />
                             </div>
                             <div>
-                              <div className="text-sm font-medium text-[#2E2A26]">{p.name}</div>
+                              <div className="text-sm font-medium text-[#2E2A26]">{group.name}</div>
+                              {items.length > 1 && (
+                                <div className="text-xs text-[#7A6F66]">Variantes: {items.map(it => it.unit).join(' • ')}</div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -732,7 +873,19 @@ export default function InventarioPage() {
                           <span className="text-sm font-semibold text-[#A0522D]">{p.price}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-[#7A6F66]">{p.unit}</span>
+                          {items.length > 1 ? (
+                            <select
+                              value={selectedId}
+                              onChange={(e) => setSelectedVariantByName(prev => ({ ...prev, [group.name]: Number(e.target.value) }))}
+                              className="px-3 py-2 border rounded bg-white text-sm"
+                            >
+                              {items.map(it => (
+                                <option key={it.id} value={it.id}>{it.unit} — {it.price}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-sm text-[#7A6F66]">{p.unit}</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -748,39 +901,43 @@ export default function InventarioPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-1">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-1 justify-items-center">
                             <button 
-                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ alert(e?.message || 'Error') } }} 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDetail(true) } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-[#7A6F66] hover:text-[#2E2A26] hover:bg-[#FBF7F4] rounded-lg transition-colors" 
-                              title={`Ver ${p.name}`}
+                              title={`Ver ${group.name}`}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-[#A0522D] hover:text-[#8B5E3C] hover:bg-[#A0522D]/10 rounded-lg transition-colors" 
-                              title={`Editar ${p.name}`}
+                              title={`Editar ${group.name}`}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
+
+                            <PrintButton productRaw={p.raw} compact />
+
                             <button 
-                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" 
-                              title={`Agregar stock a ${p.name}`}
+                              title={`Agregar stock a ${group.name}`}
                             >
                               <PlusCircle className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" 
-                              title={`Quitar stock a ${p.name}`}
+                              title={`Quitar stock a ${group.name}`}
                             >
                               <MinusCircle className="w-4 h-4" />
                             </button>
+                            
                             <button 
-                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ alert(e?.message||'Error') } }} 
+                              onClick={async () => { try { const detalle = await getProductoById(p.raw?.idProducto || p.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message||'Error', variant: 'destructive' }) } }} 
                               className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" 
-                              title={`Eliminar ${p.name}`}
+                              title={`Eliminar ${group.name}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

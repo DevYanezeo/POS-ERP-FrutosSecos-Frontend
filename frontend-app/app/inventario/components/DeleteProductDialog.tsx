@@ -10,6 +10,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { toast } from '@/hooks/use-toast'
 
 interface DeleteProductDialogProps {
   open: boolean
@@ -33,13 +34,18 @@ export default function DeleteProductDialog({
     try {
       const id = product?.idProducto || product?.id
       await onDelete(id)
-      onSuccess()
-      onOpenChange(false)
-      alert('Producto eliminado exitosamente')
-    } catch(e: any) { 
-      alert(e?.message || 'Error eliminando producto') 
-    } finally { 
-      setProcessing(false) 
+  onSuccess()
+  onOpenChange(false)
+  toast({ title: 'Producto eliminado', description: 'Producto eliminado exitosamente', variant: 'success' })
+    } catch(e: any) {
+      const msg = String(e?.message || '')
+      if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
+        toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
+      } else {
+        toast({ title: 'Error eliminando producto', description: msg || 'Error eliminando producto', variant: 'destructive' })
+      }
+    } finally {
+      setProcessing(false)
     }
   }
 

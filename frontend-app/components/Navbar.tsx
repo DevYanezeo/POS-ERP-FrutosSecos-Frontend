@@ -1,7 +1,7 @@
 "use client"
 
 import Image from 'next/image'
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, Home, ShoppingCart, Box, Clock, BarChart2, Settings } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import StockAlert from '@/app/dashboard/components/StockAlert'
 
@@ -20,6 +20,9 @@ export default function Navbar() {
 
   const isInicio = pathname === '/' || pathname === '/dashboard'
   const isInventario = pathname?.startsWith('/inventario')
+  const isVentas = pathname === '/ventas' && !pathname?.includes('/historial')
+  const isHistorial = pathname?.startsWith('/ventas/historial')
+  const isFinanzas = pathname === '/finanzas'
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -31,29 +34,66 @@ export default function Navbar() {
   }
 
   return (
-    <header className="border-b bg-[#FBF7F4]">
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-50 border-b bg-[#FBF7F4]">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        {/* Logo a la izquierda - más grande */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="logo" width={36} height={36} />
-            <div>
-              <div className="text-sm font-bold">MSM</div>
-              <div className="text-xs text-muted-foreground">Mil Sabores Manager</div>
-            </div>
+          <Image src="/logo.png" alt="logo" width={48} height={48} />
+          <div>
+            <div className="text-base font-bold">MSM</div>
+            <div className="text-sm text-muted-foreground">Mil Sabores Manager</div>
           </div>
-
-          <nav className="hidden md:flex items-center gap-2 ml-6">
-            <button onClick={() => router.push('/')} className={`px-3 py-1 rounded text-sm ${isInicio ? 'bg-white text-[#7A6F66] font-semibold' : 'text-[#7A6F66] hover:bg-white'}`}>Inicio</button>
-            <button onClick={() => router.push('/inventario')} className={`px-3 py-1 rounded text-sm ${isInventario ? 'bg-blue-500 text-white' : 'text-[#7A6F66] hover:bg-white'}`}>Inventario</button>
-          </nav>
         </div>
 
+        {/* Navegación central con más espacio */}
+        <nav className="hidden md:flex items-center gap-6">
+          {/* barra de navegación central: alto fijo para que los botones puedan ocupar toda la altura */}
+          <main className="h-12 flex items-center shadow gap-4 bg-[#F5EDE4] rounded-xl px-0">
+            <button
+              onClick={() => router.push('/')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isInicio ? 'bg-[#9A5128] text-white font-semibold shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Home className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Inicio</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/inventario')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isInventario ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Box className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Inventario</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/ventas')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isVentas ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Ventas</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/ventas/historial')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isHistorial ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <Clock className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Historial</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/finanzas')}
+              className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isFinanzas ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+              <BarChart2 className="w-4 h-4 mr-2" />
+              <span className="hidden lg:inline">Finanzas</span>
+            </button>
+
+          </main>
+        </nav>
+
+        {/* Acciones a la derecha */}
         <div className="flex items-center gap-4">
           <StockAlert />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
-                <User className="w-4 h-4"/>
+              <button className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
+                <User className="w-5 h-5"/>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -64,6 +104,9 @@ export default function Navbar() {
                 Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
+            <div className="text-base font-bold">
+              {localStorage.getItem('user_nombre') || 'Invitado'}
+            </div>
           </DropdownMenu>
         </div>
       </div>
