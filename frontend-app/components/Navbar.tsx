@@ -13,10 +13,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useEffect, useState } from 'react'
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
+  const [userName, setUserName] = useState<string | null>(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) router.push("/login")
+
+    const storedName = localStorage.getItem("user_nombre")
+    setUserName(storedName)
+  }, [router])
 
   const isInicio = pathname === '/' || pathname === '/dashboard'
   const isInventario = pathname?.startsWith('/inventario')
@@ -105,7 +115,7 @@ export default function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
             <div className="text-base font-bold">
-              {localStorage.getItem('user_nombre') || 'Invitado'}
+              {userName || "Invitado"}
             </div>
           </DropdownMenu>
         </div>
