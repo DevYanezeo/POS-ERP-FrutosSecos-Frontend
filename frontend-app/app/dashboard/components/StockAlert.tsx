@@ -38,7 +38,7 @@ export default function StockAlert() {
       // Eliminar duplicados por idProducto
       const uniqueData = removeDuplicates(data || [], 'idProducto') as Producto[]
       setLowStock(uniqueData)
-      
+
       // Note: do not show a global destructive toast here. The UI exposes
       // the alert via the notifications button/drawer and badge. Showing
       // an automatic global destructive toast proved too noisy and may be
@@ -55,14 +55,9 @@ export default function StockAlert() {
       // Eliminar duplicados por idLote
       const uniqueData = removeDuplicates(data || [], 'idLote')
       setExpirations(uniqueData)
-      
-      if (uniqueData && uniqueData.length > 0) {
-        toast({ 
-          title: `${uniqueData.length} lote${uniqueData.length > 1 ? 's' : ''} próximo${uniqueData.length > 1 ? 's' : ''} a vencer`,
-          description: 'Revisa lotes con fecha de vencimiento cercana.',
-          variant: 'destructive'
-        })
-      }
+
+      // Notificación automática desactivada para evitar molestias
+      // El usuario puede ver las alertas haciendo clic en el ícono de campana
     } catch (e) {
       console.error('Error fetching expirations', e)
     }
@@ -71,7 +66,7 @@ export default function StockAlert() {
   useEffect(() => {
     fetchLowStock()
     fetchExpirations()
-    const interval = setInterval(() => { 
+    const interval = setInterval(() => {
       fetchLowStock()
       fetchExpirations()
     }, 60000) // Cada 1 minuto
@@ -83,15 +78,14 @@ export default function StockAlert() {
   return (
     <>
       {/* Botón de notificaciones */}
-      <button 
-        onClick={() => setOpen(true)} 
-        title="Notificaciones" 
+      <button
+        onClick={() => setOpen(true)}
+        title="Notificaciones"
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors group"
       >
-        <Bell className={`w-6 h-6 transition-colors ${
-          totalAlerts > 0 ? 'text-yellow-600 group-hover:text-yellow-700' : 'text-gray-400 group-hover:text-gray-500'
-        }`} />
-        
+        <Bell className={`w-6 h-6 transition-colors ${totalAlerts > 0 ? 'text-yellow-600 group-hover:text-yellow-700' : 'text-gray-400 group-hover:text-gray-500'
+          }`} />
+
         {totalAlerts > 0 && (
           <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
             {totalAlerts > 99 ? '99+' : totalAlerts}
@@ -101,8 +95,8 @@ export default function StockAlert() {
 
       {/* Drawer lateral */}
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent 
-          data-vaul-drawer-direction="right" 
+        <DrawerContent
+          data-vaul-drawer-direction="right"
           className="data-[vaul-drawer-direction=right]:w-96 data-[vaul-drawer-direction=right]:max-w-full"
         >
           {/* Header mejorado */}
@@ -121,8 +115,8 @@ export default function StockAlert() {
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setOpen(false)} 
+              <button
+                onClick={() => setOpen(false)}
                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                 aria-label="Cerrar"
               >
@@ -133,7 +127,7 @@ export default function StockAlert() {
 
           {/* Contenido scrolleable */}
           <div className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-6">
-            
+
             {/* Sección: Stock Bajo */}
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -156,10 +150,10 @@ export default function StockAlert() {
               ) : (
                 <ul className="space-y-2">
                   {lowStock.map((p) => (
-                    <li 
+                    <li
                       key={p.idProducto}
                       className="group bg-white rounded-lg border-2 border-red-200 hover:border-red-400 p-3 transition-all cursor-pointer"
-                      onClick={() => { 
+                      onClick={() => {
                         setOpen(false)
                         router.push(`/inventario?view=${p.idProducto}`)
                       }}
@@ -170,11 +164,10 @@ export default function StockAlert() {
                             {p.nombre}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded ${
-                              p.stock === 0 
-                                ? 'bg-red-100 text-red-700' 
+                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded ${p.stock === 0
+                                ? 'bg-red-100 text-red-700'
                                 : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                              }`}>
                               {p.stock === 0 ? 'SIN STOCK' : `${p.stock} unidades`}
                             </span>
                           </div>
@@ -214,21 +207,20 @@ export default function StockAlert() {
                     const fecha = a.fechaVencimiento || a.fecha_vencimiento || a.vencimiento || a.lote?.fechaVencimiento || a.loteFecha
                     const loteId = a.idLote || a.loteId || a.lote?.id || a.loteNumero
                     const diasRestantes = fecha ? Math.ceil((new Date(fecha).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null
-                    
+
                     const isUrgent = diasRestantes !== null && diasRestantes <= 7
                     const isCritical = diasRestantes !== null && diasRestantes <= 3
 
                     return (
-                      <li 
+                      <li
                         key={loteId ?? idx}
-                        className={`group bg-white rounded-lg border-2 p-3 transition-all cursor-pointer ${
-                          isCritical 
-                            ? 'border-red-200 hover:border-red-400' 
-                            : isUrgent 
-                            ? 'border-orange-200 hover:border-orange-400' 
-                            : 'border-yellow-200 hover:border-yellow-400'
-                        }`}
-                        onClick={() => { 
+                        className={`group bg-white rounded-lg border-2 p-3 transition-all cursor-pointer ${isCritical
+                            ? 'border-red-200 hover:border-red-400'
+                            : isUrgent
+                              ? 'border-orange-200 hover:border-orange-400'
+                              : 'border-yellow-200 hover:border-yellow-400'
+                          }`}
+                        onClick={() => {
                           setOpen(false)
                           if (productoId) router.push(`/inventario?view=${productoId}`)
                         }}
@@ -247,13 +239,12 @@ export default function StockAlert() {
                                   📅 {fecha ? new Date(fecha).toLocaleDateString('es-CL') : 'Fecha desconocida'}
                                 </span>
                                 {diasRestantes !== null && (
-                                  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded ${
-                                    isCritical 
-                                      ? 'bg-red-100 text-red-700 animate-pulse' 
-                                      : isUrgent 
-                                      ? 'bg-orange-100 text-orange-700' 
-                                      : 'bg-yellow-100 text-yellow-700'
-                                  }`}>
+                                  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded ${isCritical
+                                      ? 'bg-red-100 text-red-700 animate-pulse'
+                                      : isUrgent
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
                                     {diasRestantes} día{diasRestantes !== 1 ? 's' : ''}
                                   </span>
                                 )}
