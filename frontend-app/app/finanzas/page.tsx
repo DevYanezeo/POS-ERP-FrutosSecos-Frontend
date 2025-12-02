@@ -344,19 +344,7 @@ export default function FinanzasPage() {
                     </div>
                 </div>
 
-                {/* Footer con nota */}
-                <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-6">
-                    <div className="flex items-start gap-3">
-                        <Calendar className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <p className="text-gray-800 font-semibold mb-2">📊 Datos de Mockup</p>
-                            <p className="text-gray-700 text-sm">
-                                Los datos mostrados son simulados para demostración. Una vez que el backend esté implementado,
-                                esta vista se conectará automáticamente a los datos reales de ventas, inventario y finanzas.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+
 
             </div>
         </main>
