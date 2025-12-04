@@ -149,6 +149,15 @@ export async function updateProducto(id: number, producto: any) {
   })
 }
 
+// Actualiza parcialmente un producto usando el nuevo endpoint PATCH /api/productos/{id}/parcial
+// ParcialDTO: envía solo los campos que deseas modificar (e.g., nombre, precio, unidad, estado, descripcion)
+export async function updateProductoParcial(id: number, parcialDto: any) {
+  return fetchWithAuth(`${API_BASE}/api/productos/${id}/parcial`, {
+    method: 'PUT',
+    body: JSON.stringify(parcialDto),
+  })
+}
+
 export async function deleteProducto(id: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/${id}`, {
     method: 'DELETE',
@@ -199,3 +208,7 @@ export async function getProductoByCodigo(codigo: string) {
     throw new Error(message)
   }
 }
+
+
+
+

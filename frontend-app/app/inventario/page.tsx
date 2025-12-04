@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -120,25 +120,21 @@ export default function InventarioPage() {
     try {
       // obtener estado actual del producto
       const current = await getProductoById(id)
-      // mezclar: los cambios prevalecen, pero preservamos campos no enviados
-      const merged = { ...current, ...changes }
-      const payload: any = {
-        idProducto: merged.idProducto,
-        nombre: merged.nombre,
-        descripcion: merged.descripcion,
-        imagen: merged.imagen,
-        precio: merged.precio,
-        stock: merged.stock,
-        unidad: merged.unidad,
-        estado: merged.estado,
-        codigo: merged.codigo,
-        categoriaId: merged.categoriaId,
-        peso: merged.peso,
-      }
-      
-      console.log('Payload limpio:', payload)
-      
-      await updateProducto(id, payload)
+      // construir DTO parcial solo con campos del producto editados
+      const parcialDto: any = {}
+      if (typeof changes?.nombre !== 'undefined') parcialDto.nombre = changes.nombre
+      if (typeof changes?.descripcion !== 'undefined') parcialDto.descripcion = changes.descripcion
+      if (typeof changes?.unidad !== 'undefined') parcialDto.unidad = changes.unidad
+      if (typeof changes?.estado !== 'undefined') parcialDto.estado = changes.estado
+      if (typeof changes?.precio !== 'undefined') parcialDto.precio = changes.precio
+
+      // evitar enviar lotes por PATCH; backend preserva relaciones
+      console.log('ParcialDTO:', parcialDto)
+
+      // si no hay cambios, salir sin llamar al endpoint
+      if (Object.keys(parcialDto).length === 0) return
+
+      await updateProductoParcial(id, parcialDto)
     } catch (e:any) {
       throw e
     }
@@ -813,13 +809,13 @@ export default function InventarioPage() {
                       </button>
 
                       <button 
-                        onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
-                        className="w-full px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
-                        title="Eliminar producto"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Eliminar
-                      </button>
+                          onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch(e:any){ toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }} 
+                          className="px-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          title="Eliminar producto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar
+                        </button>
                     </div>
                   </div>
                 </div>
@@ -939,7 +935,7 @@ export default function InventarioPage() {
                               className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" 
                               title={`Eliminar ${group.name}`}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" strokeWidth={2} />
                             </button>
                           </div>
                         </td>

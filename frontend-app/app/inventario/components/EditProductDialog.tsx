@@ -178,6 +178,12 @@ export default function EditProductDialog({
 
 
   const handleSave = async () => {
+    // Guardar solo desde la pestaña Producto; en Lotes solo cerrar
+    if (activeTab !== 'Producto') {
+      onOpenChange(false)
+      return
+    }
+
     if (!editNombre) {
       toast({ title: 'Nombre requerido', description: 'El nombre es requerido', variant: 'destructive' })
       return
@@ -186,17 +192,43 @@ export default function EditProductDialog({
     try {
       const id = product?.idProducto || product?.id
       
+      // Mantener los lotes existentes para no afectar relaciones
+      const existingLotes = Array.isArray(product?.lotes) ? product.lotes : (Array.isArray(lotes) ? lotes : [])
       const payload: any = { 
         nombre: editNombre, 
         descripcion: editDescripcion,
         unidad: editUnidad,
-        estado: editEstado
+        estado: editEstado,
+        lotes: existingLotes
       }
       
       if (editPrecio !== '') {
         payload.precio = parseInt(String(editPrecio), 10)
       }
       
+      // Evitar PUT si no hay cambios en los campos del producto
+      const original = {
+        nombre: product?.nombre || '',
+        descripcion: product?.descripcion || '',
+        unidad: product?.unidad || '',
+        estado: product?.estado !== false,
+        precio: product?.precio ?? undefined,
+      }
+      const computed = { ...payload }
+      if (computed.precio === undefined) delete (computed as any).precio
+      const hasChanges = (
+        original.nombre !== computed.nombre ||
+        original.descripcion !== computed.descripcion ||
+        original.unidad !== computed.unidad ||
+        original.estado !== computed.estado ||
+        (computed.precio !== undefined && original.precio !== computed.precio)
+      )
+      if (!hasChanges) {
+        setProcessing(false)
+        onOpenChange(false)
+        return
+      }
+
       console.log('EditProductDialog - Payload:', payload)
       await onUpdate(id, payload)
       onSuccess()
@@ -365,18 +397,20 @@ export default function EditProductDialog({
             )}
           </div>
 
-          <DialogFooter className="mt-3 pt-3 border-t gap-2 flex justify-between">
+          
+            <DialogFooter className="mt-4 pt-3 border-t gap-2">
             <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
               Cancelar
             </DialogClose>
             <button 
               disabled={processing} 
-              onClick={handleSave}
+                onClick={handleSave}
               className="px-4 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {processing ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
@@ -478,12 +512,14 @@ export default function EditProductDialog({
             <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
               Cancelar
             </DialogClose>
+            
             <button 
+            
               disabled={updatingLote}
               onClick={handleEditLote}
               className="px-4 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
             >
-              {updatingLote ? 'Actualizando...' : 'Actualizar Lote'}
+              {updatingLote ? 'Actualizando...' : 'Actualizar Lote' }
             </button>
           </DialogFooter>
         </DialogContent>

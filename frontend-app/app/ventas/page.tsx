@@ -562,8 +562,11 @@ export default function VentasPage() {
                   productos.map((producto) => {
                     const pid = producto?.id ?? producto?.productoId ?? producto?.idProducto ?? producto?._id
                     const stock = producto.stock || 0
-                    const sinStock = stock === 0
-                    const stockBajo = stock > 0 && stock <= 5
+                    const loteCount = Array.isArray(producto?.lotes) ? producto.lotes.length : 0
+                    const sinLotes = loteCount === 0
+                    // Marcar como sin stock visualmente también cuando no hay lotes activos
+                    const sinStock = stock === 0 || sinLotes
+                    const stockBajo = !sinStock && stock <= 5
 
                     return (
                       <div
@@ -580,7 +583,7 @@ export default function VentasPage() {
                               <h3 className="font-semibold text-lg text-gray-800">{producto.nombre}</h3>
                               {sinStock && (
                                 <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">
-                                  SIN STOCK
+                                  {stock === 0 ? 'SIN STOCK' : 'SIN LOTES'}
                                 </span>
                               )}
                               {stockBajo && (
