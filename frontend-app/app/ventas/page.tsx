@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { getProductos, buscarProductos, getCategorias, getProductoByCodigo } from '@/lib/productos'
 import { getLoteByCodigo } from '@/lib/lotes'
 import { confirmarVenta } from '@/lib/ventas'
+import { buscarOCrearCliente } from '@/lib/clientesFiado'
 import { useRouter } from 'next/navigation'
 import ScanProductoInput from './components/ScanProductoInput'
 import { Loader2, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
@@ -85,6 +86,9 @@ export default function VentasPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showFiadoModal, setShowFiadoModal] = useState(false)
   const [clienteNombre, setClienteNombre] = useState('')
+  const [clienteTelefono, setClienteTelefono] = useState('')
+  const [clienteEmail, setClienteEmail] = useState('')
+  const [clienteRut, setClienteRut] = useState('')
   const [fechaVencimiento, setFechaVencimiento] = useState('')
 
   useEffect(() => {
@@ -327,7 +331,13 @@ export default function VentasPage() {
     fetchProductos()
   }
 
-  async function handleConfirm(metodoPago: string, esFiado: boolean = false, clienteId?: number | null, fechaVencimientoPago?: string | null) {
+  async function handleConfirm(
+    metodoPago: string,
+    esFiado: boolean = false,
+    clienteId?: number | null,
+    fechaVencimientoPago?: string | null,
+    clienteData?: { nombre: string; telefono?: string | null; email?: string | null; rut?: string | null } | null
+  ) {
     if (cart.length === 0) {
       showNotification('warning', 'El carrito está vacío')
       return
@@ -416,6 +426,14 @@ export default function VentasPage() {
         precioUnitario: Math.round(Number(it.precioUnitario)),
         idLote: it.idLote == null ? null : Number(it.idLote),
       }))
+    }
+
+    // Agregar datos del cliente si están disponibles
+    if (clienteData) {
+      payload.clienteNombre = clienteData.nombre
+      if (clienteData.telefono) payload.clienteTelefono = clienteData.telefono
+      if (clienteData.email) payload.clienteEmail = clienteData.email
+      if (clienteData.rut) payload.clienteRut = clienteData.rut
     }
 
     try {
@@ -884,7 +902,8 @@ export default function VentasPage() {
               <p className="text-orange-100 text-sm mt-1">Complete los datos del cliente</p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Nombre del Cliente */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre del Cliente *
@@ -893,11 +912,54 @@ export default function VentasPage() {
                   type="text"
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
-                  placeholder="Ingrese nombre del cliente"
+                  placeholder="Ingrese nombre completo"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
                 />
               </div>
 
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={clienteTelefono}
+                  onChange={(e) => setClienteTelefono(e.target.value)}
+                  placeholder="Ej: +56 9 1234 5678"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={clienteEmail}
+                  onChange={(e) => setClienteEmail(e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* RUT */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  RUT
+                </label>
+                <input
+                  type="text"
+                  value={clienteRut}
+                  onChange={(e) => setClienteRut(e.target.value)}
+                  placeholder="12.345.678-9"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* Fecha de Vencimiento */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Fecha de Vencimiento (opcional)
@@ -910,6 +972,7 @@ export default function VentasPage() {
                 />
               </div>
 
+              {/* Total a Fiar */}
               <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
                 <p className="text-sm text-orange-800 font-semibold">Total a Fiar:</p>
                 <p className="text-3xl font-bold text-orange-600 mt-1">
@@ -917,10 +980,11 @@ export default function VentasPage() {
                 </p>
               </div>
 
+              {/* Nota informativa */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Nota:</strong> El nombre del cliente se registrará para referencia.
-                  Cuando se implemente el módulo de clientes, podrá asociarse correctamente.
+                  <strong>Nota:</strong> Los datos del cliente se registrarán para referencia y seguimiento.
+                  Complete la mayor cantidad de información posible para facilitar el contacto.
                 </p>
               </div>
             </div>
@@ -930,6 +994,9 @@ export default function VentasPage() {
                 onClick={() => {
                   setShowFiadoModal(false)
                   setClienteNombre('')
+                  setClienteTelefono('')
+                  setClienteEmail('')
+                  setClienteRut('')
                   setFechaVencimiento('')
                 }}
                 className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
@@ -943,19 +1010,49 @@ export default function VentasPage() {
                     return
                   }
 
-                  // Convertir fecha a formato dd/MM/yyyy si existe
-                  let fechaFormateada = null
-                  if (fechaVencimiento) {
-                    const [year, month, day] = fechaVencimiento.split('-')
-                    fechaFormateada = `${day}/${month}/${year}`
-                  }
+                  try {
+                    // Convertir fecha a formato dd/MM/yyyy si existe
+                    let fechaFormateada = null
+                    if (fechaVencimiento) {
+                      const [year, month, day] = fechaVencimiento.split('-')
+                      fechaFormateada = `${day}/${month}/${year}`
+                    }
 
-                  setShowFiadoModal(false)
-                  // Por ahora usamos clienteId null ya que no tenemos módulo de clientes
-                  // El backend guardará el nombre en la descripción o se puede crear el cliente
-                  await handleConfirm('FIADO', true, null, fechaFormateada)
-                  setClienteNombre('')
-                  setFechaVencimiento('')
+                    // Crear objeto con datos del cliente
+                    const clienteData = {
+                      nombre: clienteNombre.trim(),
+                      telefono: clienteTelefono.trim() || null,
+                      email: clienteEmail.trim() || null,
+                      rut: clienteRut.trim() || null
+                    }
+
+                    setShowFiadoModal(false)
+                    showNotification('warning', 'Buscando/creando cliente...')
+
+                    // Buscar o crear el cliente automáticamente
+                    const cliente = await buscarOCrearCliente(clienteData)
+
+                    if (!cliente || !cliente.idCliente) {
+                      showNotification('error', 'Error al crear/buscar cliente')
+                      return
+                    }
+
+                    console.log('[Fiado] Cliente obtenido:', cliente)
+
+                    // Confirmar venta con el clienteId correcto
+                    await handleConfirm('FIADO', true, cliente.idCliente, fechaFormateada, clienteData)
+
+                    // Limpiar campos
+                    setClienteNombre('')
+                    setClienteTelefono('')
+                    setClienteEmail('')
+                    setClienteRut('')
+                    setFechaVencimiento('')
+                  } catch (error: any) {
+                    console.error('[Fiado] Error:', error)
+                    showNotification('error', 'Error al procesar fiado: ' + error.message)
+                    setShowFiadoModal(true) // Reabrir modal para que el usuario pueda corregir
+                  }
                 }}
                 disabled={!clienteNombre.trim()}
                 className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
