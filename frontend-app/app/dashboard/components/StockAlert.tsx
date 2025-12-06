@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { toast } from '@/hooks/use-toast'
 import { findLotesVencimientoProximoDTO } from '@/lib/lotes'
 import { getProductosStockBajo } from '@/lib/productos'
+import { getStockMinimo, getAlertasStock } from '@/lib/config'
 type Producto = {
   idProducto: number
   nombre: string
@@ -34,7 +35,13 @@ export default function StockAlert() {
 
   async function fetchLowStock() {
     try {
-      const data = await getProductosStockBajo()
+      const state = getAlertasStock()
+      if (state === 'Desactivadas') {
+        setLowStock([])
+        return
+      }
+      const min = getStockMinimo()
+      const data = await getProductosStockBajo(min)
       // Eliminar duplicados por idProducto
       const uniqueData = removeDuplicates(data || [], 'idProducto') as Producto[]
       setLowStock(uniqueData)
@@ -70,7 +77,17 @@ export default function StockAlert() {
       fetchLowStock()
       fetchExpirations()
     }, 60000) // Cada 1 minuto
-    return () => clearInterval(interval)
+    // Escuchar cambios de stockMinimo para refrescar inmediatamente
+    const handler = () => fetchLowStock()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('stockMinimoChanged', handler as any)
+    }
+    return () => {
+      clearInterval(interval)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('stockMinimoChanged', handler as any)
+      }
+    }
   }, [])
 
   const totalAlerts = lowStock.length + expirations.length

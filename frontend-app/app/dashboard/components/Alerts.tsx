@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 // Helpers para llamadas al backend (productos, lotes)
 import { getProductosStockBajo, getProductoById } from "@/lib/productos";
+import { getStockMinimo, getAlertasStock } from "@/lib/config";
 import { findLotesVencimientoProximoDTO } from "@/lib/lotes";
 
 // -----------------------
@@ -50,8 +51,15 @@ export default function Alerts() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const data = await getProductosStockBajo();
-        setBajoStock(data || []);
+        // Respetar configuración global
+        const state = getAlertasStock();
+        if (state === 'Desactivadas') {
+          setBajoStock([]);
+        } else {
+          const min = getStockMinimo();
+          const data = await getProductosStockBajo(min);
+          setBajoStock(data || []);
+        }
       } catch (e: any) {
         setError(e?.message || "Error al cargar alertas de stock.");
       } finally {
