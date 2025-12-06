@@ -1,5 +1,6 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 import { toast } from '@/hooks/use-toast'
+import { getStockMinimo } from '@/lib/config'
 
 export interface Producto {
   id?: number
@@ -131,8 +132,25 @@ export async function getProductosByCategoria(categoriaId: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/categoria/${categoriaId}`)
 }
 
-export async function getProductosStockBajo() {
-  return fetchWithAuth(`${API_BASE}/api/productos/stock-bajo`)
+// Obtiene productos con stock bajo. Usa el umbral global si no se pasa uno.
+export async function getProductosStockBajo(min?: number) {
+  const threshold = typeof min === 'number' ? min : getStockMinimo()
+  // Backend actualizado: usa path param /stock-bajo/{min}
+  const url = `${API_BASE}/api/productos/stock-bajo/${encodeURIComponent(String(threshold))}`
+  try {
+    const data = await fetchWithAuth(url)
+    if (Array.isArray(data)) return data
+    return data
+  } catch (e) {
+    // Fallback: intentar obtener todos y filtrar client-side por "stock"
+    try {
+      const all = await getProductos()
+      if (Array.isArray(all)) {
+        return all.filter((p: any) => typeof p?.stock === 'number' && p.stock <= threshold)
+      }
+    } catch {}
+    throw e
+  }
 }
 
 export async function saveProducto(producto: any) {

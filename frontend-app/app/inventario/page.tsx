@@ -711,7 +711,7 @@ export default function InventarioPage() {
                 const selectedId = selectedVariantByName[group.name] || items[0]?.id
                 const product = items.find(it => it.id === selectedId) || items[0]
                 const stockNum = product.raw?.stock ?? 0
-                const isLowStock = stockNum <= 5
+                const isLowStock = stockNum <= (typeof window !== 'undefined' ? (Number(localStorage.getItem('stockMinimo')) || 5) : 5)
                 return (
                 <div key={group.name} draggable
                   onDragStart={(e) => handleDragStart(e, group.name)}
@@ -846,7 +846,7 @@ export default function InventarioPage() {
                       const selectedId = selectedVariantByName[group.name] || items[0]?.id
                       const p = items.find(it => it.id === selectedId) || items[0]
                       const stockNum = p.raw?.stock ?? 0
-                      const isLowStock = stockNum <= 5
+                      const isLowStock = stockNum <= (typeof window !== 'undefined' ? (Number(localStorage.getItem('stockMinimo')) || 5) : 5)
                       return (
                       <tr key={group.name} className={`transition-colors ${isLowStock ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-[#FBF7F4]/50'}`}>
                         <td className="px-6 py-4">
