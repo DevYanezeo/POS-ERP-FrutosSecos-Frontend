@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Edit2, Trash2, Plus, EditIcon } from "lucide-react"
+import RegisterForm from "@/components/RegisterForm"
 
 type Usuario = { id: number; nombre: string; rol: string; email?: string; telefono?: string; rut?: string; activo?: boolean }
 
@@ -27,7 +28,7 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
   const [editActivo, setEditActivo] = useState<boolean>(true)
 
   const [adding, setAdding] = useState({
-    nombre: '', email: '', password: '', rol: 'CAJERO' as 'ADMIN' | 'CAJERO', rut: '', telefono: ''
+    nombre: '', apellidos: '', email: '', password: '', rol: 'CAJERO' as 'ADMIN' | 'CAJERO', rut: '', telefono: ''
   })
   const [busy, setBusy] = useState(false)
   const [openAdd, setOpenAdd] = useState(false)
@@ -134,7 +135,8 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
     }
     setBusy(true)
     try {
-      const res = await register(adding)
+      const nombreCompleto = [adding.nombre, adding.apellidos].filter(Boolean).join(' ').trim()
+      const res = await register({ ...adding, nombre: nombreCompleto })
       const newUser: Usuario = {
         id: res.idUsuario,
         nombre: res.nombre,
@@ -142,7 +144,7 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
         email: res.email,
       }
       setItems(prev => [...prev, newUser])
-      setAdding({ nombre: '', email: '', password: '', rol: 'CAJERO', rut: '', telefono: '' })
+      setAdding({ nombre: '', apellidos: '', email: '', password: '', rol: 'CAJERO', rut: '', telefono: '' })
       setOpenAdd(false)
       try { toast({ title: 'Usuario agregado', description: 'El usuario fue creado exitosamente.' }) } catch {}
     } catch (e) {
@@ -281,7 +283,11 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <input placeholder="Nombre" value={adding.nombre} onChange={(e)=>setAdding(p=>({...p,nombre:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Apellidos" value={adding.apellidos} onChange={(e)=>setAdding(p=>({...p,apellidos:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <input placeholder="Email" value={adding.email} onChange={(e)=>setAdding(p=>({...p,email:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e)=>setAdding(p=>({...p,password:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e)=>setAdding(p=>({...p,password:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
