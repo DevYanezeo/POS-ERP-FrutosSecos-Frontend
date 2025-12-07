@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { API_BASE } from '@/lib/api'
 import { Calendar, ChevronLeft, ChevronRight, Eye, DollarSign, CreditCard, Banknote } from 'lucide-react'
 
 interface Venta {
@@ -66,7 +67,7 @@ export default function HistorialVentasPage() {
       }
 
       const response = await fetch(
-        `http://localhost:8080/api/ventas/historial?desde=${startDate}&hasta=${endDate}`,
+        `${API_BASE}/api/ventas/historial?desde=${startDate}&hasta=${endDate}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
