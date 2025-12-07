@@ -13,6 +13,9 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
   const [isScanning, setIsScanning] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const autoTriggerRef = useRef<NodeJS.Timeout | null>(null)
+  const MIN_AUTO_LEN = 6
+  const AUTO_DELAY_MS = 140
 
   // Auto-focus on mount
   useEffect(() => {
@@ -36,6 +39,28 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
     }
   }
 
+  // Auto-disparar búsqueda cuando el scanner termina de teclear (breve pausa)
+  const handleChange = (value: string) => {
+    setScanCode(value)
+    setIsScanning(true)
+
+    // Cancelar posibles triggers previos
+    if (autoTriggerRef.current) clearTimeout(autoTriggerRef.current)
+
+    // Solo auto-buscar cuando el código tiene una longitud razonable
+    if (value.trim().length >= MIN_AUTO_LEN) {
+      autoTriggerRef.current = setTimeout(() => {
+        handleSearch()
+      }, AUTO_DELAY_MS)
+    }
+
+    // Apagar indicador si no hay más entrada
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
+    scanTimeoutRef.current = setTimeout(() => {
+      setIsScanning(false)
+    }, 500)
+  }
+
   const handleSearch = async () => {
     if (!scanCode.trim()) {
       onError('Ingrese un código de barras')
@@ -45,17 +70,19 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
     setIsScanning(true)
     
     try {
-      const { getProductoByCodigo } = await import('@/lib/productos')
-      const producto = await getProductoByCodigo(scanCode.trim())
-      
-      if (!producto) {
-        onError(`No se encontró producto con código: ${scanCode}`)
+      // Buscar por código de lote usando el endpoint de lotes
+      const { getLoteByCodigo } = await import('@/lib/lotes')
+      const lote = await getLoteByCodigo(scanCode.trim())
+
+      if (!lote) {
+        onError(`No se encontró lote con código: ${scanCode}`)
         setScanCode('')
         inputRef.current?.focus()
         return
       }
 
-      onProductFound(producto)
+      // Entrega el objeto lote completo al caller para que decida qué hacer (producto, cantidad, etc.)
+      onProductFound(lote)
       setScanCode('')
       
       // Volver a enfocar para próximo escaneo
@@ -81,8 +108,12 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
           ref={inputRef}
           type="text"
           value={scanCode}
-          onChange={(e) => setScanCode(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text')
+            if (pasted) handleChange(pasted)
+          }}
           placeholder="Escanee código de barras o busque..."
           className={`w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
             isScanning 

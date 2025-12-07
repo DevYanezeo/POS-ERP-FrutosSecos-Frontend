@@ -200,7 +200,7 @@ export async function getCategorias() {
 
 export async function getProductoByCodigo(codigo: string) {
   try {
-    const url = `${API_BASE}/api/productos/buscar?nombre=${encodeURIComponent(codigo)}`
+    const url = `${API_BASE}/api/lote/codigo/${encodeURIComponent(codigo)}`
     console.log(`[API] GET ${url}`)
     const res = await fetch(url, {
       method: 'GET',

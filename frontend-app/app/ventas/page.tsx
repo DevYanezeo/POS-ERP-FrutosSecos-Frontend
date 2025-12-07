@@ -122,9 +122,22 @@ export default function VentasPage() {
     setTimeout(() => setNotification(null), 4000)
   }
 
-  function handleProductoScanned(producto: any) {
-    addToCart(producto, null)
-    showNotification('success', `${producto.nombre} agregado al carrito`)
+  function handleProductoScanned(scanned: any) {
+    // Permitir tanto producto directo como objeto de lote { producto, idLote, cantidad, ... }
+    const isLote = scanned && typeof scanned === 'object' && 'producto' in scanned
+    if (isLote) {
+      const p = scanned.producto || {}
+      const loteId = scanned.idLote ?? scanned.id ?? null
+      const stockDesdeLote = scanned.cantidad ?? p.stock ?? 0
+      // Pasar un objeto de producto enriquecido con stock del lote
+      const productoParaCarrito = { ...p, stock: stockDesdeLote }
+      addToCart(productoParaCarrito, loteId)
+      showNotification('success', `${p.nombre || 'Producto'} agregado al carrito`)
+      return
+    }
+    // Caso estándar: producto directo
+    addToCart(scanned, null)
+    showNotification('success', `${scanned?.nombre || 'Producto'} agregado al carrito`)
   }
 
   function handleScanError(message: string) {
@@ -134,13 +147,14 @@ export default function VentasPage() {
   function addToCart(producto: any, loteId: number | null = null) {
     // normalize product id: backend shape may vary (id | productoId | idProducto | _id)
     const pid = producto?.id ?? producto?.productoId ?? producto?.idProducto ?? producto?._id ?? null
-    const stockDisponible = producto?.stock ?? 0
+    // Preferir stock del lote cuando esté presente; si no, usar stock del producto
+    const stockDisponible = (typeof producto?.stockDisponible === 'number' ? producto.stockDisponible : undefined) ?? producto?.stock ?? 0
 
     console.log('[VENTAS] addToCart called', { producto, resolvedId: pid, loteId, stock: stockDisponible })
 
     // Validar stock disponible
     if (stockDisponible <= 0) {
-      showNotification('error', `Sin stock disponible para ${producto?.nombre || 'este producto'}`)
+      showNotification('error', `${loteId ? 'Sin stock disponible en el lote' : 'Sin stock disponible para'} ${producto?.nombre || 'este producto'}`)
       return
     }
 
@@ -151,7 +165,7 @@ export default function VentasPage() {
         // Verificar que no exceda el stock al incrementar
         const nuevaCantidad = existing.cantidad + 1
         if (nuevaCantidad > stockDisponible) {
-          showNotification('warning', `Stock insuficiente. Disponible: ${stockDisponible} unidades`)
+          showNotification('warning', `${loteId ? 'Stock de lote insuficiente' : 'Stock insuficiente'}. Disponible: ${stockDisponible} unidades`)
           return prev // No incrementar
         }
         return prev.map(p => p === existing ? { ...p, cantidad: nuevaCantidad } : p)
@@ -164,7 +178,7 @@ export default function VentasPage() {
         cantidad: 1,
         precioUnitario: producto?.precio ?? producto?.precioUnitario ?? 0,
         idLote: loteId,
-        stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores
+        stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
       }]
     })
   }
