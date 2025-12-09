@@ -3,86 +3,47 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, Calendar, Package, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { obtenerTodosLosReportes } from "@/lib/finanzas"
 
-// Mock data - Reemplazar con datos reales del backend cuando esté disponible
-const MOCK_DATA = {
-    semana: {
-        masVendido: {
-            nombre: "Almendras Premium",
-            cantidad: 145,
-            ingresos: 725000,
-            imagen: "🌰"
-        },
-        menosVendido: {
-            nombre: "Nueces de Macadamia",
-            cantidad: 12,
-            ingresos: 48000,
-            imagen: "🥜"
-        },
-        margenGanancias: {
-            ingresos: 2450000,
-            costos: 1200000,
-            gastosOperacionales: 350000,
-            ganancia: 900000,
-            porcentaje: 36.7
-        },
-        productosVencidos: {
-            cantidad: 3,
-            perdidas: 85000,
-            items: [
-                { nombre: "Pasas Rubias", cantidad: 5, valor: 25000 },
-                { nombre: "Maní Salado", cantidad: 8, valor: 32000 },
-                { nombre: "Pistachos", cantidad: 4, valor: 28000 }
-            ]
-        }
-    },
-    mes: {
-        masVendido: {
-            nombre: "Maní Tostado",
-            cantidad: 580,
-            ingresos: 2320000,
-            imagen: "🥜"
-        },
-        menosVendido: {
-            nombre: "Avellanas Enteras",
-            cantidad: 45,
-            ingresos: 180000,
-            imagen: "🌰"
-        },
-        margenGanancias: {
-            ingresos: 9850000,
-            costos: 4800000,
-            gastosOperacionales: 1450000,
-            ganancia: 3600000,
-            porcentaje: 36.5
-        },
-        productosVencidos: {
-            cantidad: 12,
-            perdidas: 340000,
-            items: [
-                { nombre: "Almendras Tostadas", cantidad: 15, valor: 120000 },
-                { nombre: "Nueces Peladas", cantidad: 10, valor: 85000 },
-                { nombre: "Pasas Negras", cantidad: 8, valor: 48000 },
-                { nombre: "Maní con Chocolate", cantidad: 12, valor: 87000 }
-            ]
-        }
-    }
-}
 
 export default function FinanzasPage() {
     const router = useRouter()
     const [periodo, setPeriodo] = useState<'semana' | 'mes'>('semana')
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [data, setData] = useState<any>(null)
 
     useEffect(() => {
         const token = localStorage.getItem("token")
-        if (!token) router.push('/login')
+        if (!token) {
+            router.push('/login')
+            return
+        }
 
-        // Simular carga de datos
-        setTimeout(() => setLoading(false), 800)
-    }, [router])
+        cargarDatosFinanzas()
+    }, [router, periodo])
 
-    const data = MOCK_DATA[periodo]
+    async function cargarDatosFinanzas() {
+        try {
+            setLoading(true)
+            setError(null)
+
+            console.log(`[FINANZAS] Cargando reportes para período: ${periodo}`)
+
+            // Obtener datos del backend
+            const reportes = await obtenerTodosLosReportes(periodo)
+
+            console.log('[FINANZAS] Reportes obtenidos:', reportes)
+
+            // Usar los datos del backend directamente
+            setData(reportes)
+        } catch (err: any) {
+            console.error('[FINANZAS] Error cargando datos:', err)
+            setError(err.message || 'Error al cargar los datos financieros')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // Fecha de hoy formateada
     const getFechaHoy = () => {
@@ -100,6 +61,73 @@ export default function FinanzasPage() {
                     <p className="text-gray-600 font-medium">Cargando datos financieros...</p>
                 </div>
             </div>
+        )
+    }
+
+    // Si hay error o no hay datos, mostrar mensaje de error
+    if (error || !data) {
+        return (
+            <main className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto p-6">
+                    <div className="bg-red-50 border-2 border-red-400 rounded-xl p-6">
+                        <h2 className="text-xl font-bold text-red-800 mb-2">⚠️ Error al cargar datos</h2>
+                        <p className="text-red-700">{error || 'No se pudieron cargar los datos financieros.'}</p>
+                        <button
+                            onClick={() => cargarDatosFinanzas()}
+                            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        >
+                            🔄 Reintentar
+                        </button>
+                    </div>
+                </div>
+            </main>
+        )
+    }
+
+    // Validar que los datos tengan la estructura esperada con todas las propiedades necesarias
+    const isValidData =
+        data.margenGanancias &&
+        typeof data.margenGanancias.ingresos === 'number' &&
+        typeof data.margenGanancias.costos === 'number' &&
+        typeof data.margenGanancias.gastosOperacionales === 'number' &&
+        typeof data.margenGanancias.ganancia === 'number' &&
+        typeof data.margenGanancias.porcentaje === 'number' &&
+        data.masVendido &&
+        data.masVendido.nombre &&
+        typeof data.masVendido.cantidad === 'number' &&
+        typeof data.masVendido.ingresos === 'number' &&
+        data.menosVendido &&
+        data.menosVendido.nombre &&
+        typeof data.menosVendido.cantidad === 'number' &&
+        typeof data.menosVendido.ingresos === 'number' &&
+        data.productosVencidos &&
+        typeof data.productosVencidos.cantidad === 'number' &&
+        typeof data.productosVencidos.perdidas === 'number' &&
+        Array.isArray(data.productosVencidos.items);
+
+    if (!isValidData) {
+        console.error('[FINANZAS] Datos con estructura inválida:', data);
+        return (
+            <main className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto p-6">
+                    <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6">
+                        <h2 className="text-xl font-bold text-yellow-800 mb-2">⚠️ Datos incompletos</h2>
+                        <p className="text-yellow-700">Los datos recibidos del servidor están incompletos o tienen un formato inválido.</p>
+                        <details className="mt-4">
+                            <summary className="cursor-pointer text-sm font-semibold text-yellow-800">Ver detalles técnicos</summary>
+                            <pre className="mt-2 p-3 bg-yellow-100 rounded text-xs overflow-auto max-h-60">
+                                {JSON.stringify(data, null, 2)}
+                            </pre>
+                        </details>
+                        <button
+                            onClick={() => cargarDatosFinanzas()}
+                            className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+                        >
+                            🔄 Reintentar
+                        </button>
+                    </div>
+                </div>
+            </main>
         )
     }
 
@@ -215,7 +243,7 @@ export default function FinanzasPage() {
 
                         <div className="p-8">
                             <div className="flex items-center gap-6 mb-6">
-                                <div className="text-7xl">{data.masVendido.imagen}</div>
+                                <div className="text-7xl">{data.masVendido.imagen || '📦'}</div>
                                 <div className="flex-1">
                                     <h4 className="text-2xl font-bold text-gray-800 mb-2">{data.masVendido.nombre}</h4>
                                     <div className="flex items-center gap-2 text-green-600 font-semibold">
@@ -252,7 +280,7 @@ export default function FinanzasPage() {
 
                         <div className="p-8">
                             <div className="flex items-center gap-6 mb-6">
-                                <div className="text-7xl">{data.menosVendido.imagen}</div>
+                                <div className="text-7xl">{data.menosVendido.imagen || '📦'}</div>
                                 <div className="flex-1">
                                     <h4 className="text-2xl font-bold text-gray-800 mb-2">{data.menosVendido.nombre}</h4>
                                     <div className="flex items-center gap-2 text-orange-600 font-semibold">
@@ -309,7 +337,7 @@ export default function FinanzasPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {data.productosVencidos.items.map((item, idx) => (
+                            {data.productosVencidos.items.map((item: any, idx: number) => (
                                 <div key={idx} className="bg-gray-50 rounded-xl p-5 border-2 border-gray-300 hover:border-gray-500 transition-colors">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
