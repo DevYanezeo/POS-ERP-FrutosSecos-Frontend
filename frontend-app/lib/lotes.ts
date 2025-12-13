@@ -1,6 +1,13 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 import { toast } from '@/hooks/use-toast'
 
+class HttpError extends Error {
+	constructor(message: string, public status: number) {
+		super(message)
+		this.name = 'HttpError'
+	}
+}
+
 function getAuthHeaders() {
 	const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 	const headers: Record<string,string> = { 'Content-Type': 'application/json' }
@@ -70,7 +77,7 @@ async function fetchWithAuth(input: string, init?: RequestInit, options?: { sile
 				} catch (e) { console.debug('logout redirect error', e) }
 			}
 
-			throw new Error(text || `HTTP error ${res.status}`)
+			throw new HttpError(text || `HTTP error ${res.status}`, res.status)
 		}
 	console.log(`[API] ${method} ${input} -> ${res.status}`)
 	return res.json().catch(() => null)
@@ -96,7 +103,7 @@ export async function findLotesVencimientoProximoDTO(dias = 30) {
 		return await fetchWithAuth(`${API_BASE}/api/lote/alertas?dias=${dias}`, undefined, { silent403: true })
 	} catch (e: any) {
 		// If 403 (permission denied), silently return empty array for background operations
-		if (e?.message?.includes('403')) {
+		if (e instanceof HttpError && e.status === 403) {
 			console.log('[API] Alertas de lotes: acceso denegado, retornando array vacío')
 			return []
 		}
