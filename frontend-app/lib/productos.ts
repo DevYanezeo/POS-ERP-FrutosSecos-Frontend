@@ -16,6 +16,13 @@ export interface Producto {
   [key: string]: any
 }
 
+class HttpError extends Error {
+  constructor(message: string, public status: number) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const headers: Record<string,string> = { 'Content-Type': 'application/json' }
@@ -30,7 +37,7 @@ function getAuthHeaders() {
   return headers
 }
 
-async function fetchWithAuth(input: string, init?: RequestInit) {
+async function fetchWithAuth(input: string, init?: RequestInit, options?: { silent403?: boolean }) {
   const defaultHeaders = getAuthHeaders()
   const mergedInit: RequestInit = {
     ...init,
@@ -77,8 +84,8 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
       throw new Error(errMsg)
     }
 
-    // Treat 403 (forbidden) with friendly toast
-    if (res.status === 403) {
+    // Treat 403 (forbidden) with friendly toast, unless silent mode is enabled
+    if (res.status === 403 && !options?.silent403) {
       try {
         toast({ title: 'Acceso denegado', description: 'No tienes permiso para acceder a esta funcionalidad. Contacta al administrador.', variant: 'destructive' })
       } catch (e) { console.debug('toast error', e) }
@@ -86,7 +93,8 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
 
     // As a pragmatic fallback: if we have a token but receive 401/403 with empty body,
     // treat it as session expiration to avoid leaving the user in a broken state.
-    if (tokenPresent && (res.status === 401 || res.status === 403) && (!text || text.trim() === '')) {
+    // Skip this if silent403 is enabled (background operations shouldn't redirect)
+    if (!options?.silent403 && tokenPresent && (res.status === 401 || res.status === 403) && (!text || text.trim() === '')) {
       try { toast({ title: 'Sesión expirada', description: 'Por favor inicie sesión nuevamente.', variant: 'destructive' }) } catch (e) { console.debug('toast error', e) }
       try {
         if (typeof window !== 'undefined') {
@@ -97,7 +105,7 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
       } catch (e) { console.debug('logout redirect error', e) }
     }
 
-    throw new Error(text || `HTTP error ${res.status}`)
+    throw new HttpError(text || `HTTP error ${res.status}`, res.status)
   }
   console.log(`[API] ${method} ${input} -> ${res.status}`)
   return res.json().catch(() => null)
@@ -138,10 +146,15 @@ export async function getProductosStockBajo(min?: number) {
   // Backend actualizado: usa path param /stock-bajo/{min}
   const url = `${API_BASE}/api/productos/stock-bajo/${encodeURIComponent(String(threshold))}`
   try {
-    const data = await fetchWithAuth(url)
+    const data = await fetchWithAuth(url, undefined, { silent403: true })
     if (Array.isArray(data)) return data
     return data
-  } catch (e) {
+  } catch (e: any) {
+    // If 403 (permission denied), silently return empty array for background operations
+    if (e instanceof HttpError && e.status === 403) {
+      console.log('[API] Stock bajo: acceso denegado, retornando array vacío')
+      return []
+    }
     // Fallback: intentar obtener todos y filtrar client-side por "stock"
     try {
       const all = await getProductos()
