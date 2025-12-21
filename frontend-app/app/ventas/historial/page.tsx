@@ -160,30 +160,30 @@ export default function HistorialVentasPage() {
   const totalMes = totalMesEfectivo + totalMesDebito + totalMesTransferencia
 
   return (
-    <main className="min-h-screen bg-gray-50 p-3">
+    <main className="min-h-screen bg-[#F9F6F3] p-3">
       <div className="max-w-[95%] mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-[#F5EDE4]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-[#A0522D] rounded-lg flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Historial de Ventas</h1>
-                <p className="text-gray-600">Registro contable mensual</p>
+                <h1 className="text-3xl font-bold text-[#2E2A26]">Historial de Ventas</h1>
+                <p className="text-[#7A6F66]">Registro contable mensual</p>
               </div>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => router.push('/ventas/fiados')}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                className="px-6 py-3 bg-[#D4A373] hover:bg-[#C29263] text-white font-semibold rounded-lg transition-colors"
               >
                 Ver Fiados
               </button>
               <button
                 onClick={() => router.push('/ventas')}
-                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
               >
                 Ir a Ventas
               </button>
@@ -191,51 +191,51 @@ export default function HistorialVentasPage() {
           </div>
 
           {/* Navegación de mes */}
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="flex items-center justify-between bg-[#FBF7F4] rounded-lg p-4 border border-[#F5EDE4]">
             <button
               onClick={handlePreviousMonth}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-2 hover:bg-[#F5EDE4] rounded-lg transition-colors"
               title="Mes anterior"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
+              <ChevronLeft className="w-6 h-6 text-[#7A6F66]" />
             </button>
-            <h2 className="text-2xl font-bold text-gray-800 capitalize">{monthName}</h2>
+            <h2 className="text-2xl font-bold text-[#2E2A26] capitalize">{monthName}</h2>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-2 hover:bg-[#F5EDE4] rounded-lg transition-colors"
               title="Mes siguiente"
             >
-              <ChevronRight className="w-6 h-6 text-gray-700" />
+              <ChevronRight className="w-6 h-6 text-[#7A6F66]" />
             </button>
           </div>
 
           {/* Resumen del mes */}
           <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+            <div className="bg-white border border-[#F5EDE4] rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Banknote className="w-5 h-5 text-gray-700" />
-                <p className="text-sm font-semibold text-gray-700">Efectivo</p>
+                <Banknote className="w-5 h-5 text-[#7A6F66]" />
+                <p className="text-sm font-semibold text-[#7A6F66]">Efectivo</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">${totalMesEfectivo.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-[#2E2A26]">${totalMesEfectivo.toLocaleString()}</p>
             </div>
-            <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+            <div className="bg-white border border-[#F5EDE4] rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="w-5 h-5 text-gray-700" />
-                <p className="text-sm font-semibold text-gray-700">Débito</p>
+                <CreditCard className="w-5 h-5 text-[#7A6F66]" />
+                <p className="text-sm font-semibold text-[#7A6F66]">Débito</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">${totalMesDebito.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-[#2E2A26]">${totalMesDebito.toLocaleString()}</p>
             </div>
-            <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+            <div className="bg-white border border-[#F5EDE4] rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-gray-700" />
-                <p className="text-sm font-semibold text-gray-700">Transferencia</p>
+                <DollarSign className="w-5 h-5 text-[#7A6F66]" />
+                <p className="text-sm font-semibold text-[#7A6F66]">Transferencia</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">${totalMesTransferencia.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-[#2E2A26]">${totalMesTransferencia.toLocaleString()}</p>
             </div>
-            <div className="bg-gray-800 border-2 border-gray-900 rounded-lg p-4">
+            <div className="bg-[#2E2A26] border border-[#2E2A26] rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-5 h-5 text-white" />
-                <p className="text-sm font-semibold text-gray-200">Total Mes</p>
+                <p className="text-sm font-semibold text-[#E5DDD4]">Total Mes</p>
               </div>
               <p className="text-2xl font-bold text-white">${totalMes.toLocaleString()}</p>
             </div>
@@ -243,13 +243,13 @@ export default function HistorialVentasPage() {
         </div>
 
         {/* Tabla tipo cuaderno contable */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-[#F5EDE4] overflow-hidden">
           {/* Header de tabla */}
-          <div className="grid grid-cols-5 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-bold text-center border-b-2 border-gray-900">
-            <div className="p-4 border-r border-gray-600">Día</div>
-            <div className="p-4 border-r border-gray-600">Efectivo</div>
-            <div className="p-4 border-r border-gray-600">Débito</div>
-            <div className="p-4 border-r border-gray-600">Transferencia</div>
+          <div className="grid grid-cols-5 bg-[#2E2A26] text-white font-bold text-center border-b border-[#2E2A26]">
+            <div className="p-4 border-r border-[#4A443E]">Día</div>
+            <div className="p-4 border-r border-[#4A443E]">Efectivo</div>
+            <div className="p-4 border-r border-[#4A443E]">Débito</div>
+            <div className="p-4 border-r border-[#4A443E]">Transferencia</div>
             <div className="p-4">Total Día</div>
           </div>
 
@@ -271,22 +271,22 @@ export default function HistorialVentasPage() {
                 return (
                   <div
                     key={dia}
-                    className={`grid grid-cols-5 border-b border-gray-200 text-center transition-all ${hasVentas
-                        ? 'hover:bg-blue-50'
-                        : 'bg-gray-50'
-                      } ${isToday ? 'bg-yellow-50 border-yellow-300 border-2' : ''}`}
+                    className={`grid grid-cols-5 border-b border-[#F5EDE4] text-center transition-all ${hasVentas
+                      ? 'hover:bg-[#FBF7F4]'
+                      : 'bg-white'
+                      } ${isToday ? 'bg-[#F5EDE4] border-[#D4A373] border-b' : ''}`}
                   >
-                    <div className={`p-4 border-r border-gray-200 font-semibold ${hasVentas ? 'text-blue-600' : 'text-gray-400'
+                    <div className={`p-4 border-r border-[#F5EDE4] font-semibold ${hasVentas ? 'text-[#A0522D]' : 'text-[#9C9288]'
                       }`}>
                       <div className="flex flex-col items-center justify-center gap-2">
                         <span className="text-lg">{dia}</span>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[#7A6F66]">
                           {new Date(year, month, dia).toLocaleDateString('es-CL', { weekday: 'short' })}
                         </p>
                         {hasVentas && (
                           <button
                             onClick={() => handleDayClick(dia)}
-                            className="mt-1 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
+                            className="mt-1 px-3 py-1 bg-[#A0522D] hover:bg-[#8B5E3C] text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
                           >
                             <Eye className="w-3 h-3" />
                             Ver Detalle
@@ -294,16 +294,16 @@ export default function HistorialVentasPage() {
                         )}
                       </div>
                     </div>
-                    <div className="p-4 border-r border-gray-200 text-gray-700 font-semibold text-lg">
+                    <div className="p-4 border-r border-[#F5EDE4] text-[#7A6F66] font-semibold text-lg">
                       {dataDia ? `$${dataDia.efectivo.toLocaleString()}` : '-'}
                     </div>
-                    <div className="p-4 border-r border-gray-200 text-gray-700 font-semibold text-lg">
+                    <div className="p-4 border-r border-[#F5EDE4] text-[#7A6F66] font-semibold text-lg">
                       {dataDia ? `$${dataDia.debito.toLocaleString()}` : '-'}
                     </div>
-                    <div className="p-4 border-r border-gray-200 text-gray-700 font-semibold text-lg">
+                    <div className="p-4 border-r border-[#F5EDE4] text-[#7A6F66] font-semibold text-lg">
                       {dataDia ? `$${dataDia.transferencia.toLocaleString()}` : '-'}
                     </div>
-                    <div className={`p-4 font-bold text-xl ${hasVentas ? 'text-gray-900' : 'text-gray-300'
+                    <div className={`p-4 font-bold text-xl ${hasVentas ? 'text-[#2E2A26]' : 'text-[#E5DDD4]'
                       }`}>
                       {dataDia ? `$${dataDia.total.toLocaleString()}` : '-'}
                     </div>
@@ -314,15 +314,15 @@ export default function HistorialVentasPage() {
           </div>
 
           {/* Footer con totales */}
-          <div className="grid grid-cols-5 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-bold text-center border-t-4 border-gray-900">
-            <div className="p-4 border-r border-gray-600 text-lg">TOTALES</div>
-            <div className="p-4 border-r border-gray-600 text-gray-100 text-xl">
+          <div className="grid grid-cols-5 bg-[#2E2A26] text-white font-bold text-center border-t-4 border-[#1a1816]">
+            <div className="p-4 border-r border-[#4A443E] text-lg">TOTALES</div>
+            <div className="p-4 border-r border-[#4A443E] text-[#E5DDD4] text-xl">
               ${totalMesEfectivo.toLocaleString()}
             </div>
-            <div className="p-4 border-r border-gray-600 text-gray-100 text-xl">
+            <div className="p-4 border-r border-[#4A443E] text-[#E5DDD4] text-xl">
               ${totalMesDebito.toLocaleString()}
             </div>
-            <div className="p-4 border-r border-gray-600 text-gray-100 text-xl">
+            <div className="p-4 border-r border-[#4A443E] text-[#E5DDD4] text-xl">
               ${totalMesTransferencia.toLocaleString()}
             </div>
             <div className="p-4 text-white text-2xl">
@@ -337,13 +337,13 @@ export default function HistorialVentasPage() {
         <div className="fixed top-4 right-4 z-50 pointer-events-none">
           <div className="bg-white rounded-lg shadow-2xl w-[800px] max-h-[70vh] overflow-hidden pointer-events-auto">
             {/* Header del modal */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 border-b">
+            <div className="bg-[#2E2A26] text-white p-4 border-b border-[#4A443E]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold">
                     Ventas del {selectedDay} de {currentDate.toLocaleDateString('es-CL', { month: 'long' })}
                   </h3>
-                  <p className="text-blue-100 mt-1 text-sm">
+                  <p className="text-[#E5DDD4] mt-1 text-sm">
                     {detailVentas.length} venta{detailVentas.length !== 1 ? 's' : ''} registrada{detailVentas.length !== 1 ? 's' : ''}
                   </p>
                 </div>
@@ -364,15 +364,15 @@ export default function HistorialVentasPage() {
                 {detailVentas.map((venta, index) => (
                   <div
                     key={venta.id}
-                    className="border-2 border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                    className="border border-[#F5EDE4] rounded-lg p-3 hover:border-[#A0522D] hover:bg-[#FBF7F4] transition-all"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-gray-800">#{index + 1}</span>
+                          <span className="text-xl font-bold text-[#2E2A26]">#{index + 1}</span>
                           <div>
-                            <p className="text-sm text-gray-500">ID Venta: {venta.id}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-sm text-[#7A6F66]">ID Venta: {venta.id}</p>
+                            <p className="text-xs text-[#9C9288]">
                               {new Date(venta.fecha).toLocaleString('es-CL')}
                             </p>
                           </div>
@@ -381,17 +381,17 @@ export default function HistorialVentasPage() {
 
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className={`text-sm font-semibold text-gray-700`}>
+                          <p className={`text-sm font-semibold text-[#7A6F66]`}>
                             {venta.metodoPago}
                           </p>
-                          <p className="text-xl font-bold text-gray-900">
+                          <p className="text-xl font-bold text-[#2E2A26]">
                             ${venta.total.toLocaleString()}
                           </p>
                         </div>
 
                         <button
                           onClick={() => handleViewVentaDetail(venta.id)}
-                          className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                          className="px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white font-medium rounded-lg transition-colors flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
                           Ver Detalle
@@ -404,29 +404,29 @@ export default function HistorialVentasPage() {
 
               {/* Resumen del día */}
               {selectedDay && ventasPorDia[selectedDay] && (
-                <div className="mt-4 pt-4 border-t-2 border-gray-300">
-                  <h4 className="text-base font-bold text-gray-800 mb-3">Resumen del Día</h4>
+                <div className="mt-4 pt-4 border-t border-[#F5EDE4]">
+                  <h4 className="text-base font-bold text-[#2E2A26] mb-3">Resumen del Día</h4>
                   <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-white border-2 border-gray-300 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-700 font-semibold mb-1">Efectivo</p>
-                      <p className="text-lg font-bold text-gray-900">
+                    <div className="bg-[#FBF7F4] border border-[#F5EDE4] rounded-lg p-2 text-center">
+                      <p className="text-xs text-[#7A6F66] font-semibold mb-1">Efectivo</p>
+                      <p className="text-lg font-bold text-[#2E2A26]">
                         ${ventasPorDia[selectedDay].efectivo.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-white border-2 border-gray-300 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-700 font-semibold mb-1">Débito</p>
-                      <p className="text-lg font-bold text-gray-900">
+                    <div className="bg-[#FBF7F4] border border-[#F5EDE4] rounded-lg p-2 text-center">
+                      <p className="text-xs text-[#7A6F66] font-semibold mb-1">Débito</p>
+                      <p className="text-lg font-bold text-[#2E2A26]">
                         ${ventasPorDia[selectedDay].debito.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-white border-2 border-gray-300 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-700 font-semibold mb-1">Transferencia</p>
-                      <p className="text-lg font-bold text-gray-900">
+                    <div className="bg-[#FBF7F4] border border-[#F5EDE4] rounded-lg p-2 text-center">
+                      <p className="text-xs text-[#7A6F66] font-semibold mb-1">Transferencia</p>
+                      <p className="text-lg font-bold text-[#2E2A26]">
                         ${ventasPorDia[selectedDay].transferencia.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-gray-800 border-2 border-gray-900 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-200 font-semibold mb-1">Total</p>
+                    <div className="bg-[#2E2A26] border border-[#2E2A26] rounded-lg p-2 text-center">
+                      <p className="text-xs text-[#E5DDD4] font-semibold mb-1">Total</p>
                       <p className="text-lg font-bold text-white">
                         ${ventasPorDia[selectedDay].total.toLocaleString()}
                       </p>
@@ -437,10 +437,10 @@ export default function HistorialVentasPage() {
             </div>
 
             {/* Footer del modal */}
-            <div className="bg-gray-50 px-4 py-3 border-t flex justify-end">
+            <div className="bg-[#F9F6F3] px-4 py-3 border-t border-[#F5EDE4] flex justify-end">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-[#7A6F66] hover:bg-[#5D544D] text-white font-semibold rounded-lg transition-colors"
               >
                 Cerrar
               </button>

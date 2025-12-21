@@ -55,10 +55,10 @@ export default function FinanzasPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-[#F9F6F3] flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-[#A0522D] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Cargando datos financieros...</p>
+                    <p className="text-[#7A6F66] font-medium">Cargando datos financieros...</p>
                 </div>
             </div>
         )
@@ -67,7 +67,7 @@ export default function FinanzasPage() {
     // Si hay error o no hay datos, mostrar mensaje de error
     if (error || !data) {
         return (
-            <main className="min-h-screen bg-gray-50">
+            <main className="min-h-screen bg-[#F9F6F3]">
                 <div className="max-w-7xl mx-auto p-6">
                     <div className="bg-red-50 border-2 border-red-400 rounded-xl p-6">
                         <h2 className="text-xl font-bold text-red-800 mb-2">⚠️ Error al cargar datos</h2>
@@ -108,7 +108,7 @@ export default function FinanzasPage() {
     if (!isValidData) {
         console.error('[FINANZAS] Datos con estructura inválida:', data);
         return (
-            <main className="min-h-screen bg-gray-50">
+            <main className="min-h-screen bg-[#F9F6F3]">
                 <div className="max-w-7xl mx-auto p-6">
                     <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6">
                         <h2 className="text-xl font-bold text-yellow-800 mb-2">⚠️ Datos incompletos</h2>
@@ -132,30 +132,30 @@ export default function FinanzasPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gray-50">
+        <main className="min-h-screen bg-[#F9F6F3]">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
 
                 {/* Header */}
-                <div className="bg-white rounded-xl shadow-md border-2 border-gray-300 p-8">
+                <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] p-8">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3 text-gray-800">
+                            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3 text-[#2E2A26]">
                                 <DollarSign className="w-10 h-10 text-[#A0522D]" />
                                 Finanzas - Reportes
                             </h1>
-                            <p className="text-gray-600 text-lg">
+                            <p className="text-[#7A6F66] text-lg">
                                 Análisis financiero de Frutos Secos Mil Sabores
                             </p>
-                            <p className="text-gray-500 text-sm mt-1">{getFechaHoy()}</p>
+                            <p className="text-[#9C9288] text-sm mt-1">{getFechaHoy()}</p>
                         </div>
 
                         {/* Selector de Período */}
-                        <div className="bg-gray-100 rounded-xl p-2 flex gap-2 border border-gray-300">
+                        <div className="bg-[#FBF7F4] rounded-xl p-2 flex gap-2 border border-[#F5EDE4]">
                             <button
                                 onClick={() => setPeriodo('semana')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${periodo === 'semana'
-                                    ? 'bg-[#A0522D] text-white shadow-md border-2 border-[#8B4513]'
-                                    : 'text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-[#A0522D] text-white shadow-sm'
+                                    : 'text-[#7A6F66] hover:bg-white hover:text-[#A0522D]'
                                     }`}
                             >
                                 Esta Semana
@@ -163,8 +163,8 @@ export default function FinanzasPage() {
                             <button
                                 onClick={() => setPeriodo('mes')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${periodo === 'mes'
-                                    ? 'bg-[#A0522D] text-white shadow-md border-2 border-[#8B4513]'
-                                    : 'text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-[#A0522D] text-white shadow-sm'
+                                    : 'text-[#7A6F66] hover:bg-white hover:text-[#A0522D]'
                                     }`}
                             >
                                 Este Mes
@@ -174,40 +174,40 @@ export default function FinanzasPage() {
                 </div>
 
                 {/* Margen de Ganancias - Destacado */}
-                <div className="bg-white rounded-xl shadow-md border-2 border-gray-300 p-8">
+                <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] p-8">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-3xl font-bold flex items-center gap-3 text-gray-800">
+                        <h2 className="text-3xl font-bold flex items-center gap-3 text-[#2E2A26]">
                             <DollarSign className="w-8 h-8 text-green-600" />
                             Margen de Ganancias
                         </h2>
-                        <div className="bg-gray-100 px-4 py-2 rounded-lg border border-gray-300">
-                            <span className="text-sm font-medium text-gray-700">Período: {periodo === 'semana' ? 'Semanal' : 'Mensual'}</span>
+                        <div className="bg-[#FBF7F4] px-4 py-2 rounded-lg border border-[#F5EDE4]">
+                            <span className="text-sm font-medium text-[#7A6F66]">Período: {periodo === 'semana' ? 'Semanal' : 'Mensual'}</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-300">
-                            <div className="text-gray-600 text-sm font-medium mb-2">Ingresos Totales</div>
-                            <div className="text-3xl font-bold text-gray-800">${data.margenGanancias.ingresos.toLocaleString()}</div>
-                            <div className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                        <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
+                            <div className="text-[#7A6F66] text-sm font-medium mb-2">Ingresos Totales</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.ingresos.toLocaleString()}</div>
+                            <div className="text-[#9C9288] text-xs mt-1 flex items-center gap-1">
                                 <ArrowUpRight className="w-4 h-4" />
                                 Ventas del período
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-300">
-                            <div className="text-gray-600 text-sm font-medium mb-2">Costos</div>
-                            <div className="text-3xl font-bold text-gray-800">${data.margenGanancias.costos.toLocaleString()}</div>
-                            <div className="text-gray-500 text-xs mt-1">Costo de productos</div>
+                        <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
+                            <div className="text-[#7A6F66] text-sm font-medium mb-2">Costos</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.costos.toLocaleString()}</div>
+                            <div className="text-[#9C9288] text-xs mt-1">Costo de productos</div>
                         </div>
 
-                        <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-300">
-                            <div className="text-gray-600 text-sm font-medium mb-2">Gastos Operacionales</div>
-                            <div className="text-3xl font-bold text-gray-800">${data.margenGanancias.gastosOperacionales.toLocaleString()}</div>
-                            <div className="text-gray-500 text-xs mt-1">Operación y servicios</div>
+                        <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
+                            <div className="text-[#7A6F66] text-sm font-medium mb-2">Gastos Operacionales</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.gastosOperacionales.toLocaleString()}</div>
+                            <div className="text-[#9C9288] text-xs mt-1">Operación y servicios</div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-300">
+                        <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F5EDE4]">
                             <div className="text-green-700 text-sm font-medium mb-2">Ganancia Neta</div>
                             <div className="text-4xl font-bold text-green-600">${data.margenGanancias.ganancia.toLocaleString()}</div>
                             <div className="text-green-600 text-sm mt-2 font-semibold flex items-center gap-1">
@@ -218,7 +218,7 @@ export default function FinanzasPage() {
                     </div>
 
                     {/* Barra de progreso visual */}
-                    <div className="mt-6 bg-gray-200 rounded-full h-3 overflow-hidden border border-gray-300">
+                    <div className="mt-6 bg-[#F5EDE4] rounded-full h-3 overflow-hidden">
                         <div
                             className="bg-green-500 h-full rounded-full transition-all duration-1000 ease-out"
                             style={{ width: `${data.margenGanancias.porcentaje}%` }}
@@ -230,13 +230,13 @@ export default function FinanzasPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Producto Más Vendido */}
-                    <div className="bg-white rounded-xl shadow-md border-2 border-gray-300 overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-50 p-6 border-b-2 border-gray-300">
-                            <h3 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
-                                <TrendingUp className="w-7 h-7 text-gray-300" />
+                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
+                            <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
+                                <TrendingUp className="w-7 h-7 text-[#D4A373]" />
                                 Producto Más Vendido
                             </h3>
-                            <p className="text-gray-600 text-sm mt-1">
+                            <p className="text-[#7A6F66] text-sm mt-1">
                                 {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
                             </p>
                         </div>
@@ -245,7 +245,7 @@ export default function FinanzasPage() {
                             <div className="flex items-center gap-6 mb-6">
                                 <div className="text-7xl">{data.masVendido.imagen || '📦'}</div>
                                 <div className="flex-1">
-                                    <h4 className="text-2xl font-bold text-gray-800 mb-2">{data.masVendido.nombre}</h4>
+                                    <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.masVendido.nombre}</h4>
                                     <div className="flex items-center gap-2 text-green-600 font-semibold">
                                         <ArrowUpRight className="w-5 h-5" />
                                         <span>Líder en ventas</span>
@@ -254,12 +254,12 @@ export default function FinanzasPage() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-300">
-                                    <div className="text-gray-600 text-sm font-medium mb-1">Unidades Vendidas</div>
+                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
                                     <div className="text-3xl font-bold text-green-600">{data.masVendido.cantidad}</div>
                                 </div>
-                                <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-300">
-                                    <div className="text-gray-600 text-sm font-medium mb-1">Ingresos Generados</div>
+                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
                                     <div className="text-2xl font-bold text-green-600">${data.masVendido.ingresos.toLocaleString()}</div>
                                 </div>
                             </div>
@@ -267,13 +267,13 @@ export default function FinanzasPage() {
                     </div>
 
                     {/* Producto Menos Vendido */}
-                    <div className="bg-white rounded-xl shadow-md border-2 border-gray-300 overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-50 p-6 border-b-2 border-gray-300">
-                            <h3 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
+                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
+                            <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
                                 <TrendingDown className="w-7 h-7 text-orange-600" />
                                 Producto Menos Vendido
                             </h3>
-                            <p className="text-gray-600 text-sm mt-1">
+                            <p className="text-[#7A6F66] text-sm mt-1">
                                 {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
                             </p>
                         </div>
@@ -282,7 +282,7 @@ export default function FinanzasPage() {
                             <div className="flex items-center gap-6 mb-6">
                                 <div className="text-7xl">{data.menosVendido.imagen || '📦'}</div>
                                 <div className="flex-1">
-                                    <h4 className="text-2xl font-bold text-gray-800 mb-2">{data.menosVendido.nombre}</h4>
+                                    <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.menosVendido.nombre}</h4>
                                     <div className="flex items-center gap-2 text-orange-600 font-semibold">
                                         <ArrowDownRight className="w-5 h-5" />
                                         <span>Requiere atención</span>
@@ -291,12 +291,12 @@ export default function FinanzasPage() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-300">
-                                    <div className="text-gray-600 text-sm font-medium mb-1">Unidades Vendidas</div>
+                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
                                     <div className="text-3xl font-bold text-orange-600">{data.menosVendido.cantidad}</div>
                                 </div>
-                                <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-300">
-                                    <div className="text-gray-600 text-sm font-medium mb-1">Ingresos Generados</div>
+                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
                                     <div className="text-2xl font-bold text-orange-600">${data.menosVendido.ingresos.toLocaleString()}</div>
                                 </div>
                             </div>
@@ -305,20 +305,20 @@ export default function FinanzasPage() {
                 </div>
 
                 {/* Productos Vencidos - Pérdidas */}
-                <div className="bg-white rounded-xl shadow-md border-2 border-gray-400 overflow-hidden">
-                    <div className="bg-gray-50 p-6 border-b-2 border-gray-400">
+                <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden">
+                    <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
+                                <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
                                     <AlertTriangle className="w-7 h-7 text-red-600" />
                                     Productos Vencidos - Pérdidas
                                 </h3>
-                                <p className="text-gray-600 text-sm mt-1">
+                                <p className="text-[#7A6F66] text-sm mt-1">
                                     {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
                                 </p>
                             </div>
-                            <div className="bg-white rounded-xl px-6 py-3 border-2 border-gray-400">
-                                <div className="text-gray-600 text-sm font-medium">Total Pérdidas</div>
+                            <div className="bg-white rounded-xl px-6 py-3 border border-[#F5EDE4]">
+                                <div className="text-[#7A6F66] text-sm font-medium">Total Pérdidas</div>
                                 <div className="text-3xl font-bold text-red-600">${data.productosVencidos.perdidas.toLocaleString()}</div>
                             </div>
                         </div>
@@ -326,30 +326,30 @@ export default function FinanzasPage() {
 
                     <div className="p-8">
                         <div className="mb-6 flex items-center gap-4">
-                            <div className="bg-gray-50 rounded-xl px-6 py-3 border-2 border-gray-300">
-                                <span className="text-gray-700 font-semibold">
+                            <div className="bg-[#FBF7F4] rounded-xl px-6 py-3 border border-[#F5EDE4]">
+                                <span className="text-[#2E2A26] font-semibold">
                                     {data.productosVencidos.cantidad} productos vencidos
                                 </span>
                             </div>
-                            <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                            <div className="flex-1 h-3 bg-[#F5EDE4] rounded-full overflow-hidden">
                                 <div className="h-full bg-red-500 rounded-full" style={{ width: '45%' }} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {data.productosVencidos.items.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-gray-50 rounded-xl p-5 border-2 border-gray-300 hover:border-gray-500 transition-colors">
+                                <div key={idx} className="bg-[#FBF7F4] rounded-xl p-5 border border-[#F5EDE4] hover:border-[#A0522D]/30 transition-colors">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <Package className="w-5 h-5 text-red-600" />
-                                            <h4 className="font-bold text-gray-800">{item.nombre}</h4>
+                                            <h4 className="font-bold text-[#2E2A26]">{item.nombre}</h4>
                                         </div>
-                                        <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold border border-gray-300">
+                                        <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm font-semibold border border-red-100">
                                             {item.cantidad} unidades
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-gray-600 text-sm font-medium">Pérdida estimada:</span>
+                                        <span className="text-[#7A6F66] text-sm font-medium">Pérdida estimada:</span>
                                         <span className="text-2xl font-bold text-red-600">${item.valor.toLocaleString()}</span>
                                     </div>
                                 </div>
@@ -357,12 +357,12 @@ export default function FinanzasPage() {
                         </div>
 
                         {/* Nota informativa */}
-                        <div className="mt-6 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+                        <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                             <div className="flex items-start gap-3">
                                 <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <p className="text-gray-800 font-semibold mb-1">Recomendación</p>
-                                    <p className="text-gray-700 text-sm">
+                                    <p className="text-[#2E2A26] font-semibold mb-1">Recomendación</p>
+                                    <p className="text-[#7A6F66] text-sm">
                                         Revise las fechas de vencimiento en el módulo de Inventario para reducir pérdidas.
                                         Considere implementar promociones para productos próximos a vencer.
                                     </p>
