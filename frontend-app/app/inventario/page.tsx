@@ -758,7 +758,7 @@ export default function InventarioPage() {
                           className="px-3 py-2 border rounded bg-white text-sm"
                         >
                           {items.map(it => (
-                            <option key={it.id} value={it.id}>{it.unit} — {it.price}</option>
+                            <option key={it.id} value={it.id}>{it.unit}</option>
                           ))}
                         </select>
                       </div>

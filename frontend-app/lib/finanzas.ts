@@ -106,6 +106,17 @@ export interface ReportesFinanzasResponse {
     menosVendido?: ProductoVendido
     margenGanancias?: MargenGanancias
     productosVencidos?: ProductosVencidosResponse
+    resumenFinanciero?: FinanceSummary
+}
+
+export interface FinanceSummary {
+    totalIngresos: number
+    totalCostoProductos: number
+    gastosAdquisicion: number
+    gastosOperacionales: number
+    utilidadBruta: number
+    utilidadNeta: number
+    margenPorcentaje: number
 }
 
 // ==================== HELPERS ====================
@@ -113,13 +124,15 @@ export interface ReportesFinanzasResponse {
 /**
  * Obtener los parámetros de fecha según el período
  */
-function obtenerParametrosFecha(periodo: 'semana' | 'mes'): { year: number; month?: number; week?: number } {
+function obtenerParametrosFecha(periodo: 'semana' | 'mes' | 'anio'): { year: number; month?: number; week?: number } {
     const ahora = new Date()
     const year = ahora.getFullYear()
     const month = ahora.getMonth() + 1 // JavaScript months are 0-indexed
 
     if (periodo === 'mes') {
         return { year, month }
+    } else if (periodo === 'anio') {
+        return { year }
     } else {
         // Para semana, usamos el mes actual y filtramos en el backend
         return { year, month }
@@ -130,17 +143,19 @@ function obtenerParametrosFecha(periodo: 'semana' | 'mes'): { year: number; mont
 
 /**
  * Obtener el producto más vendido en un período
- * Endpoint: GET /api/reportes/productos/{semana|mes}?year=X&month=X&limit=1
+ * Endpoint: GET /api/reportes/productos/{semana|mes|anio}?year=X&month=X&limit=1
  */
-export async function obtenerProductoMasVendido(periodo: 'semana' | 'mes' = 'semana'): Promise<ProductoVendido> {
+export async function obtenerProductoMasVendido(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<ProductoVendido> {
     const params = obtenerParametrosFecha(periodo)
-    const queryParams = new URLSearchParams({
+    const queryParams: any = {
         year: params.year.toString(),
-        month: params.month!.toString(),
         limit: '1'
-    })
+    }
+    if (params.month) queryParams.month = params.month.toString()
 
-    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/${periodo}?${queryParams}`)
+    const searchParams = new URLSearchParams(queryParams)
+
+    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/${periodo}?${searchParams}`)
 
     // El backend devuelve un array, tomamos el primero
     if (Array.isArray(response) && response.length > 0) {
@@ -160,15 +175,17 @@ export async function obtenerProductoMasVendido(periodo: 'semana' | 'mes' = 'sem
  * Obtener el producto menos vendido en un período
  * Endpoint: GET /api/reportes/productos/{semana|mes}/menos?year=X&month=X&limit=1
  */
-export async function obtenerProductoMenosVendido(periodo: 'semana' | 'mes' = 'semana'): Promise<ProductoVendido> {
+export async function obtenerProductoMenosVendido(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<ProductoVendido> {
     const params = obtenerParametrosFecha(periodo)
-    const queryParams = new URLSearchParams({
+    const queryParams: any = {
         year: params.year.toString(),
-        month: params.month!.toString(),
         limit: '1'
-    })
+    }
+    if (params.month) queryParams.month = params.month.toString()
 
-    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/${periodo}/menos?${queryParams}`)
+    const searchParams = new URLSearchParams(queryParams)
+
+    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/${periodo}/menos?${searchParams}`)
 
     // El backend devuelve un array, tomamos el primero
     if (Array.isArray(response) && response.length > 0) {
@@ -188,15 +205,17 @@ export async function obtenerProductoMenosVendido(periodo: 'semana' | 'mes' = 's
  * Obtener margen de ganancias en un período
  * Endpoint: GET /api/reportes/productos/margen/{semana|mes}?year=X&month=X&limit=100
  */
-export async function obtenerMargenGanancias(periodo: 'semana' | 'mes' = 'semana'): Promise<MargenGanancias> {
+export async function obtenerMargenGanancias(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<MargenGanancias> {
     const params = obtenerParametrosFecha(periodo)
-    const queryParams = new URLSearchParams({
+    const queryParams: any = {
         year: params.year.toString(),
-        month: params.month!.toString(),
         limit: '100' // Obtener todos los productos para calcular el margen total
-    })
+    }
+    if (params.month) queryParams.month = params.month.toString()
 
-    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/margen/${periodo}?${queryParams}`)
+    const searchParams = new URLSearchParams(queryParams)
+
+    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/margen/${periodo}?${searchParams}`)
 
     // El backend devuelve un array de productos con margen
     if (Array.isArray(response)) {
@@ -228,15 +247,17 @@ export async function obtenerMargenGanancias(periodo: 'semana' | 'mes' = 'semana
  * Obtener productos vencidos y pérdidas en un período
  * Endpoint: GET /api/reportes/productos/perdidas/{semana|mes}?year=X&month=X&limit=100
  */
-export async function obtenerProductosVencidos(periodo: 'semana' | 'mes' = 'semana'): Promise<ProductosVencidosResponse> {
+export async function obtenerProductosVencidos(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<ProductosVencidosResponse> {
     const params = obtenerParametrosFecha(periodo)
-    const queryParams = new URLSearchParams({
+    const queryParams: any = {
         year: params.year.toString(),
-        month: params.month!.toString(),
         limit: '100'
-    })
+    }
+    if (params.month) queryParams.month = params.month.toString()
 
-    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/perdidas/${periodo}?${queryParams}`)
+    const searchParams = new URLSearchParams(queryParams)
+
+    const response = await fetchWithAuth(`${API_BASE}/api/reportes/productos/perdidas/${periodo}?${searchParams}`)
 
     // El backend devuelve un array de productos con pérdidas
     if (Array.isArray(response)) {
@@ -268,9 +289,9 @@ export async function obtenerProductosVencidos(periodo: 'semana' | 'mes' = 'sema
 /**
  * Obtener todos los reportes haciendo llamadas individuales
  */
-export async function obtenerTodosLosReportes(periodo: 'semana' | 'mes' = 'semana'): Promise<ReportesFinanzasResponse> {
+export async function obtenerTodosLosReportes(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<ReportesFinanzasResponse> {
     try {
-        const [masVendido, menosVendido, margenGanancias, productosVencidos] = await Promise.all([
+        const [masVendido, menosVendido, margenGanancias, productosVencidos, resumenFinanciero] = await Promise.all([
             obtenerProductoMasVendido(periodo).catch(err => {
                 console.error('Error obteniendo producto más vendido:', err)
                 return null
@@ -287,6 +308,10 @@ export async function obtenerTodosLosReportes(periodo: 'semana' | 'mes' = 'seman
                 console.error('Error obteniendo productos vencidos:', err)
                 return null
             }),
+            obtenerResumenFinanciero(periodo).catch(err => {
+                console.error('Error obteniendo resumen financiero:', err)
+                return null
+            })
         ])
 
         return {
@@ -294,6 +319,7 @@ export async function obtenerTodosLosReportes(periodo: 'semana' | 'mes' = 'seman
             menosVendido: menosVendido || undefined,
             margenGanancias: margenGanancias || undefined,
             productosVencidos: productosVencidos || undefined,
+            resumenFinanciero: resumenFinanciero || undefined
         }
     } catch (error) {
         console.error('Error obteniendo reportes:', error)
@@ -307,4 +333,20 @@ export default {
     obtenerMargenGanancias,
     obtenerProductosVencidos,
     obtenerTodosLosReportes,
+}
+
+export async function obtenerResumenFinanciero(periodo: 'semana' | 'mes' | 'anio' = 'semana'): Promise<FinanceSummary> {
+    console.log(`[DEBUG] Fetching Resume Financiero for ${periodo} from ${API_BASE}...`)
+    try {
+        const response = await fetchWithAuth(`${API_BASE}/api/reportes/finanzas/resumen/${periodo}`)
+        console.log('[DEBUG] Resume Financiero response:', response)
+        if (!response) {
+            console.error('[DEBUG] Resume Financiero returned empty/null')
+            throw new Error('No se pudo obtener el resumen financiero')
+        }
+        return response
+    } catch (e) {
+        console.error('[DEBUG] Fetch error in obtenerResumenFinanciero:', e)
+        throw e
+    }
 }

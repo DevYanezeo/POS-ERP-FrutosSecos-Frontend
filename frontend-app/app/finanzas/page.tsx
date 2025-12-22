@@ -8,7 +8,7 @@ import { obtenerTodosLosReportes } from "@/lib/finanzas"
 
 export default function FinanzasPage() {
     const router = useRouter()
-    const [periodo, setPeriodo] = useState<'semana' | 'mes'>('semana')
+    const [periodo, setPeriodo] = useState<'semana' | 'mes' | 'anio'>('semana')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [data, setData] = useState<any>(null)
@@ -85,25 +85,9 @@ export default function FinanzasPage() {
     }
 
     // Validar que los datos tengan la estructura esperada con todas las propiedades necesarias
-    const isValidData =
-        data.margenGanancias &&
-        typeof data.margenGanancias.ingresos === 'number' &&
-        typeof data.margenGanancias.costos === 'number' &&
-        typeof data.margenGanancias.gastosOperacionales === 'number' &&
-        typeof data.margenGanancias.ganancia === 'number' &&
-        typeof data.margenGanancias.porcentaje === 'number' &&
-        data.masVendido &&
-        data.masVendido.nombre &&
-        typeof data.masVendido.cantidad === 'number' &&
-        typeof data.masVendido.ingresos === 'number' &&
-        data.menosVendido &&
-        data.menosVendido.nombre &&
-        typeof data.menosVendido.cantidad === 'number' &&
-        typeof data.menosVendido.ingresos === 'number' &&
-        data.productosVencidos &&
-        typeof data.productosVencidos.cantidad === 'number' &&
-        typeof data.productosVencidos.perdidas === 'number' &&
-        Array.isArray(data.productosVencidos.items);
+    // Relajamos validación: confiamos en que si data existe (ya validado arriba),
+    // la UI manejará las propiedades faltantes individualmente.
+    const isValidData = true;
 
     if (!isValidData) {
         console.error('[FINANZAS] Datos con estructura inválida:', data);
@@ -150,26 +134,58 @@ export default function FinanzasPage() {
                         </div>
 
                         {/* Selector de Período */}
-                        <div className="bg-[#FBF7F4] rounded-xl p-2 flex gap-2 border border-[#F5EDE4]">
+                        <div className="flex gap-4">
                             <button
-                                onClick={() => setPeriodo('semana')}
-                                className={`px-6 py-3 rounded-lg font-semibold transition-all ${periodo === 'semana'
-                                    ? 'bg-[#A0522D] text-white shadow-sm'
-                                    : 'text-[#7A6F66] hover:bg-white hover:text-[#A0522D]'
-                                    }`}
+                                onClick={() => router.push('/finanzas/gastos')}
+                                className="px-6 py-3 bg-white border border-[#A0522D] text-[#A0522D] rounded-lg font-bold hover:bg-[#A0522D] hover:text-white transition-all shadow-sm flex items-center gap-2"
                             >
-                                Esta Semana
+                                <DollarSign className="w-5 h-5" />
+                                Gestionar Gastos
                             </button>
-                            <button
-                                onClick={() => setPeriodo('mes')}
-                                className={`px-6 py-3 rounded-lg font-semibold transition-all ${periodo === 'mes'
-                                    ? 'bg-[#A0522D] text-white shadow-sm'
-                                    : 'text-[#7A6F66] hover:bg-white hover:text-[#A0522D]'
-                                    }`}
-                            >
-                                Este Mes
-                            </button>
+
+                            <div className="flex bg-white rounded-lg p-1 border border-[#F5EDE4] shadow-sm">
+                                <button
+                                    onClick={() => setPeriodo('semana')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${periodo === 'semana'
+                                        ? 'bg-[#5C4A3E] text-white shadow-sm'
+                                        : 'text-[#7A6F66] hover:bg-[#FBF7F4]'
+                                        }`}
+                                >
+                                    Semanal
+                                </button>
+                                <button
+                                    onClick={() => setPeriodo('mes')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${periodo === 'mes'
+                                        ? 'bg-[#5C4A3E] text-white shadow-sm'
+                                        : 'text-[#7A6F66] hover:bg-[#FBF7F4]'
+                                        }`}
+                                >
+                                    Mensual
+                                </button>
+                                <button
+                                    onClick={() => setPeriodo('anio')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${periodo === 'anio'
+                                        ? 'bg-[#5C4A3E] text-white shadow-sm'
+                                        : 'text-[#7A6F66] hover:bg-[#FBF7F4]'
+                                        }`}
+                                >
+                                    Anual
+                                </button>
+                            </div>
                         </div>
+                    </div>
+
+                    <div className="text-sm text-[#9C9288] mb-6 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                            {periodo === 'semana' && 'Semana actual'}
+                            {periodo === 'mes' && 'Mes actual'}
+                            {periodo === 'anio' && 'Año actual'}
+                        </span>
+                        <span className="text-[#E6E0DB]">|</span>
+                        <span className="text-sm font-medium text-[#7A6F66]">
+                            Período: {periodo === 'semana' ? 'Semanal' : periodo === 'mes' ? 'Mensual' : 'Anual'}
+                        </span>
                     </div>
                 </div>
 
@@ -181,14 +197,14 @@ export default function FinanzasPage() {
                             Margen de Ganancias
                         </h2>
                         <div className="bg-[#FBF7F4] px-4 py-2 rounded-lg border border-[#F5EDE4]">
-                            <span className="text-sm font-medium text-[#7A6F66]">Período: {periodo === 'semana' ? 'Semanal' : 'Mensual'}</span>
+                            <span className="text-sm font-medium text-[#7A6F66]">Período: {periodo === 'semana' ? 'Semanal' : periodo === 'mes' ? 'Mensual' : 'Anual'}</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
                             <div className="text-[#7A6F66] text-sm font-medium mb-2">Ingresos Totales</div>
-                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.ingresos.toLocaleString()}</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${(data.resumenFinanciero?.totalIngresos || 0).toLocaleString()}</div>
                             <div className="text-[#9C9288] text-xs mt-1 flex items-center gap-1">
                                 <ArrowUpRight className="w-4 h-4" />
                                 Ventas del período
@@ -196,23 +212,25 @@ export default function FinanzasPage() {
                         </div>
 
                         <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
-                            <div className="text-[#7A6F66] text-sm font-medium mb-2">Costos</div>
-                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.costos.toLocaleString()}</div>
-                            <div className="text-[#9C9288] text-xs mt-1">Costo de productos</div>
+                            <div className="text-[#7A6F66] text-sm font-medium mb-2">Costos Adquisición</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${(data.resumenFinanciero?.gastosAdquisicion || 0).toLocaleString()}</div>
+                            <div className="text-[#9C9288] text-xs mt-1">Mercadería (Gastos Adquisición)</div>
                         </div>
 
                         <div className="bg-[#FBF7F4] rounded-xl p-6 border border-[#F5EDE4]">
                             <div className="text-[#7A6F66] text-sm font-medium mb-2">Gastos Operacionales</div>
-                            <div className="text-3xl font-bold text-[#2E2A26]">${data.margenGanancias.gastosOperacionales.toLocaleString()}</div>
-                            <div className="text-[#9C9288] text-xs mt-1">Operación y servicios</div>
+                            <div className="text-3xl font-bold text-[#2E2A26]">${(data.resumenFinanciero?.gastosOperacionales || 0).toLocaleString()}</div>
+                            <div className="text-[#9C9288] text-xs mt-1">Operación y Otros</div>
                         </div>
 
                         <div className="bg-white rounded-xl p-6 shadow-sm border border-[#F5EDE4]">
-                            <div className="text-green-700 text-sm font-medium mb-2">Ganancia Neta</div>
-                            <div className="text-4xl font-bold text-green-600">${data.margenGanancias.ganancia.toLocaleString()}</div>
-                            <div className="text-green-600 text-sm mt-2 font-semibold flex items-center gap-1">
-                                <TrendingUp className="w-4 h-4" />
-                                {data.margenGanancias.porcentaje}% margen
+                            <div className={`${(data.resumenFinanciero?.utilidadNeta || 0) >= 0 ? 'text-green-700' : 'text-red-700'} text-sm font-medium mb-2`}>Utilidad Neta</div>
+                            <div className={`text-4xl font-bold ${(data.resumenFinanciero?.utilidadNeta || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ${(data.resumenFinanciero?.utilidadNeta || 0).toLocaleString()}
+                            </div>
+                            <div className={`${(data.resumenFinanciero?.utilidadNeta || 0) >= 0 ? 'text-green-600' : 'text-red-600'} text-sm mt-2 font-semibold flex items-center gap-1`}>
+                                {(data.resumenFinanciero?.utilidadNeta || 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                {(data.resumenFinanciero?.margenPorcentaje || 0)}% margen
                             </div>
                         </div>
                     </div>
@@ -220,8 +238,8 @@ export default function FinanzasPage() {
                     {/* Barra de progreso visual */}
                     <div className="mt-6 bg-[#F5EDE4] rounded-full h-3 overflow-hidden">
                         <div
-                            className="bg-green-500 h-full rounded-full transition-all duration-1000 ease-out"
-                            style={{ width: `${data.margenGanancias.porcentaje}%` }}
+                            className={`${(data.resumenFinanciero?.utilidadNeta || 0) >= 0 ? 'bg-green-500' : 'bg-red-500'} h-full rounded-full transition-all duration-1000 ease-out`}
+                            style={{ width: `${Math.abs(Math.max(-100, Math.min(100, data.resumenFinanciero?.margenPorcentaje || 0)))}%` }}
                         />
                     </div>
                 </div>
@@ -230,151 +248,175 @@ export default function FinanzasPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Producto Más Vendido */}
-                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
-                            <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
-                                <TrendingUp className="w-7 h-7 text-[#D4A373]" />
-                                Producto Más Vendido
-                            </h3>
-                            <p className="text-[#7A6F66] text-sm mt-1">
-                                {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
-                            </p>
-                        </div>
+                    {data.masVendido ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
+                                <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
+                                    <TrendingUp className="w-7 h-7 text-[#D4A373]" />
+                                    Producto Más Vendido
+                                </h3>
+                                <p className="text-[#7A6F66] text-sm mt-1">
+                                    {periodo === 'semana' ? 'Esta semana' : periodo === 'mes' ? 'Este mes' : 'Este año'}
+                                </p>
+                            </div>
 
-                        <div className="p-8">
-                            <div className="flex items-center gap-6 mb-6">
-                                <div className="text-7xl">{data.masVendido.imagen || '📦'}</div>
-                                <div className="flex-1">
-                                    <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.masVendido.nombre}</h4>
-                                    <div className="flex items-center gap-2 text-green-600 font-semibold">
-                                        <ArrowUpRight className="w-5 h-5" />
-                                        <span>Líder en ventas</span>
+                            <div className="p-8">
+                                <div className="flex items-center gap-6 mb-6">
+                                    <div className="text-7xl">{data.masVendido.imagen || '📦'}</div>
+                                    <div className="flex-1">
+                                        <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.masVendido.nombre}</h4>
+                                        <div className="flex items-center gap-2 text-green-600 font-semibold">
+                                            <ArrowUpRight className="w-5 h-5" />
+                                            <span>Líder en ventas</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                        <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
+                                        <div className="text-3xl font-bold text-green-600">{data.masVendido.cantidad}</div>
+                                    </div>
+                                    <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                        <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
+                                        <div className="text-2xl font-bold text-green-600">${data.masVendido.ingresos.toLocaleString()}</div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
-                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
-                                    <div className="text-3xl font-bold text-green-600">{data.masVendido.cantidad}</div>
-                                </div>
-                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
-                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
-                                    <div className="text-2xl font-bold text-green-600">${data.masVendido.ingresos.toLocaleString()}</div>
-                                </div>
-                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] p-8 flex flex-col items-center justify-center text-center">
+                            <Package className="w-12 h-12 text-[#D4A373] mb-4" />
+                            <h3 className="text-lg font-semibold text-[#7A6F66]">Sin datos de ventas</h3>
+                            <p className="text-[#9C9288] text-sm mt-1">No hay información del producto más vendido para este período.</p>
+                        </div>
+                    )}
 
                     {/* Producto Menos Vendido */}
-                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
-                            <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
-                                <TrendingDown className="w-7 h-7 text-orange-600" />
-                                Producto Menos Vendido
-                            </h3>
-                            <p className="text-[#7A6F66] text-sm mt-1">
-                                {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
-                            </p>
-                        </div>
+                    {data.menosVendido ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
+                                <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
+                                    <TrendingDown className="w-7 h-7 text-orange-600" />
+                                    Producto Menos Vendido
+                                </h3>
+                                <p className="text-[#7A6F66] text-sm mt-1">
+                                    {periodo === 'semana' ? 'Esta semana' : periodo === 'mes' ? 'Este mes' : 'Este año'}
+                                </p>
+                            </div>
 
-                        <div className="p-8">
-                            <div className="flex items-center gap-6 mb-6">
-                                <div className="text-7xl">{data.menosVendido.imagen || '📦'}</div>
-                                <div className="flex-1">
-                                    <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.menosVendido.nombre}</h4>
-                                    <div className="flex items-center gap-2 text-orange-600 font-semibold">
-                                        <ArrowDownRight className="w-5 h-5" />
-                                        <span>Requiere atención</span>
+                            <div className="p-8">
+                                <div className="flex items-center gap-6 mb-6">
+                                    <div className="text-7xl">{data.menosVendido.imagen || '📦'}</div>
+                                    <div className="flex-1">
+                                        <h4 className="text-2xl font-bold text-[#2E2A26] mb-2">{data.menosVendido.nombre}</h4>
+                                        <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                                            <ArrowDownRight className="w-5 h-5" />
+                                            <span>Requiere atención</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                        <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
+                                        <div className="text-3xl font-bold text-orange-600">{data.menosVendido.cantidad}</div>
+                                    </div>
+                                    <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
+                                        <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
+                                        <div className="text-2xl font-bold text-orange-600">${data.menosVendido.ingresos.toLocaleString()}</div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
-                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Unidades Vendidas</div>
-                                    <div className="text-3xl font-bold text-orange-600">{data.menosVendido.cantidad}</div>
-                                </div>
-                                <div className="bg-[#FBF7F4] rounded-xl p-4 border border-[#F5EDE4]">
-                                    <div className="text-[#7A6F66] text-sm font-medium mb-1">Ingresos Generados</div>
-                                    <div className="text-2xl font-bold text-orange-600">${data.menosVendido.ingresos.toLocaleString()}</div>
-                                </div>
-                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] p-8 flex flex-col items-center justify-center text-center">
+                            <AlertTriangle className="w-12 h-12 text-[#D4A373] mb-4" />
+                            <h3 className="text-lg font-semibold text-[#7A6F66]">Sin datos de ventas</h3>
+                            <p className="text-[#9C9288] text-sm mt-1">No hay información del producto menos vendido para este período.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Productos Vencidos - Pérdidas */}
-                <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden">
-                    <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
-                                    <AlertTriangle className="w-7 h-7 text-red-600" />
-                                    Productos Vencidos - Pérdidas
-                                </h3>
-                                <p className="text-[#7A6F66] text-sm mt-1">
-                                    {periodo === 'semana' ? 'Esta semana' : 'Este mes'}
-                                </p>
-                            </div>
-                            <div className="bg-white rounded-xl px-6 py-3 border border-[#F5EDE4]">
-                                <div className="text-[#7A6F66] text-sm font-medium">Total Pérdidas</div>
-                                <div className="text-3xl font-bold text-red-600">${data.productosVencidos.perdidas.toLocaleString()}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-8">
-                        <div className="mb-6 flex items-center gap-4">
-                            <div className="bg-[#FBF7F4] rounded-xl px-6 py-3 border border-[#F5EDE4]">
-                                <span className="text-[#2E2A26] font-semibold">
-                                    {data.productosVencidos.cantidad} productos vencidos
-                                </span>
-                            </div>
-                            <div className="flex-1 h-3 bg-[#F5EDE4] rounded-full overflow-hidden">
-                                <div className="h-full bg-red-500 rounded-full" style={{ width: '45%' }} />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {data.productosVencidos.items.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-[#FBF7F4] rounded-xl p-5 border border-[#F5EDE4] hover:border-[#A0522D]/30 transition-colors">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <Package className="w-5 h-5 text-red-600" />
-                                            <h4 className="font-bold text-[#2E2A26]">{item.nombre}</h4>
-                                        </div>
-                                        <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm font-semibold border border-red-100">
-                                            {item.cantidad} unidades
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[#7A6F66] text-sm font-medium">Pérdida estimada:</span>
-                                        <span className="text-2xl font-bold text-red-600">${item.valor.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Nota informativa */}
-                        <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                {data.productosVencidos ? (
+                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden">
+                        <div className="bg-[#FBF7F4] p-6 border-b border-[#F5EDE4]">
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-[#2E2A26] font-semibold mb-1">Recomendación</p>
-                                    <p className="text-[#7A6F66] text-sm">
-                                        Revise las fechas de vencimiento en el módulo de Inventario para reducir pérdidas.
-                                        Considere implementar promociones para productos próximos a vencer.
+                                    <h3 className="text-2xl font-bold flex items-center gap-3 text-[#2E2A26]">
+                                        <AlertTriangle className="w-7 h-7 text-red-600" />
+                                        Productos Vencidos - Pérdidas
+                                    </h3>
+                                    <p className="text-[#7A6F66] text-sm mt-1">
+                                        {periodo === 'semana' ? 'Esta semana' : periodo === 'mes' ? 'Este mes' : 'Este año'}
                                     </p>
                                 </div>
+                                <div className="text-right">
+                                    <div className="text-[#7A6F66] text-sm font-medium">Total Pérdidas</div>
+                                    <div className="text-3xl font-bold text-red-600">${data.productosVencidos.perdidas.toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-8">
+                            <div className="mb-6 flex items-center gap-4">
+                                <div className="bg-[#FBF7F4] rounded-xl px-6 py-3 border border-[#F5EDE4]">
+                                    <span className="text-[#2E2A26] font-semibold">
+                                        {data.productosVencidos.cantidad} productos vencidos
+                                    </span>
+                                </div>
+                                <div className="flex-1 h-3 bg-[#F5EDE4] rounded-full overflow-hidden">
+                                    <div className="h-full bg-red-500 rounded-full" style={{ width: '45%' }} />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {data.productosVencidos.items.map((item: any, idx: number) => (
+                                    <div key={idx} className="bg-[#FBF7F4] rounded-xl p-5 border border-[#F5EDE4] hover:border-[#A0522D]/30 transition-colors">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <Package className="w-5 h-5 text-red-600" />
+                                                <h4 className="font-bold text-[#2E2A26]">{item.nombre}</h4>
+                                            </div>
+                                            <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm font-semibold border border-red-100">
+                                                {item.cantidad} unidades
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[#7A6F66] text-sm font-medium">Pérdida estimada:</span>
+                                            <span className="text-2xl font-bold text-red-600">${item.valor.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Nota informativa */}
+                            <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-[#2E2A26] font-semibold mb-1">Recomendación</p>
+                                        <p className="text-[#7A6F66] text-sm">
+                                            Revise las fechas de vencimiento en el módulo de Inventario para reducir pérdidas.
+                                            Considere implementar promociones para productos próximos a vencer.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] p-8 flex flex-col items-center justify-center text-center">
+                        <AlertTriangle className="w-12 h-12 text-[#D4A373] mb-4" />
+                        <h3 className="text-lg font-semibold text-[#7A6F66]">Sin datos de vencimientos</h3>
+                        <p className="text-[#9C9288] text-sm mt-1">No hay información de productos vencidos para este período.</p>
+                    </div>
+                )}
 
 
 
-            </div>
-        </main>
+            </div >
+        </main >
     )
 }
