@@ -82,7 +82,7 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
       setEditRut(u.rut || '')
       setEditRol((u.rol as any) || 'CAJERO')
       setEditActivo(u.activo !== false)
-      try { toast({ title: 'No se pudo cargar usuario', description: 'Se muestran datos locales', variant: 'destructive' }) } catch {}
+      try { toast({ title: 'No se pudo cargar usuario', description: 'Se muestran datos locales', variant: 'destructive' }) } catch { }
     } finally {
       setLoadingEdit(false)
     }
@@ -105,10 +105,10 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
       setItems(prev => prev.map(u => u.id === editingId ? { ...u, ...payload } : u))
       setEditingId(null)
       setOpenEdit(false)
-      try { toast({ title: 'Usuario actualizado', description: 'Los cambios se guardaron correctamente.' }) } catch {}
+      try { toast({ title: 'Usuario actualizado', description: 'Los cambios se guardaron correctamente.' }) } catch { }
     } catch (e) {
       console.debug('updateUsuario error', e)
-      try { toast({ title: 'Error al actualizar usuario', variant: 'destructive' }) } catch {}
+      try { toast({ title: 'Error al actualizar usuario', variant: 'destructive' }) } catch { }
     } finally {
       setBusy(false)
     }
@@ -119,10 +119,10 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
     try {
       await deleteUsuario(id)
       setItems(prev => prev.filter(u => u.id !== id))
-      try { toast({ title: 'Usuario eliminado', description: 'El usuario fue borrado correctamente.' }) } catch {}
+      try { toast({ title: 'Usuario eliminado', description: 'El usuario fue borrado correctamente.' }) } catch { }
     } catch (e) {
       console.debug('deleteUsuario error', e)
-      try { toast({ title: 'Error al eliminar usuario', variant: 'destructive' }) } catch {}
+      try { toast({ title: 'Error al eliminar usuario', variant: 'destructive' }) } catch { }
     } finally {
       setBusy(false)
     }
@@ -146,17 +146,17 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
       setItems(prev => [...prev, newUser])
       setAdding({ nombre: '', apellidos: '', email: '', password: '', rol: 'CAJERO', rut: '', telefono: '' })
       setOpenAdd(false)
-      try { toast({ title: 'Usuario agregado', description: 'El usuario fue creado exitosamente.' }) } catch {}
+      try { toast({ title: 'Usuario agregado', description: 'El usuario fue creado exitosamente.' }) } catch { }
     } catch (e) {
       console.debug('register error', e)
-      try { toast({ title: 'Error al agregar usuario', variant: 'destructive' }) } catch {}
+      try { toast({ title: 'Error al agregar usuario', variant: 'destructive' }) } catch { }
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <section className="col-span-5 bg-white rounded-2xl border border-[#E8E1D9] shadow-sm p-6">
+    <section className="col-span-12 lg:col-span-6 bg-white rounded-2xl border border-[#E8E1D9] shadow-sm p-6">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xl">👤</span>
         <h2 className="text-xl font-semibold text-[#2E2A26]">Usuarios y Permisos</h2>
@@ -171,14 +171,14 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
                   <p className="text-sm text-[#6A5F55]">{u.rol}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2" onClick={() => startEdit(u)}>
+                  <button className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#A0522D] border border-[#D4A373] rounded-lg flex items-center gap-2 transition-colors" onClick={() => startEdit(u)}>
                     <span>Editar</span>
                     <EditIcon className="w-4 h-4" />
                   </button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-2">
-                        
+                      <button className="px-3 py-2 bg-white hover:bg-[#FFF5F5] text-red-600 border border-red-200 rounded-lg flex items-center gap-2 transition-colors">
+
                         <span>Borrar</span>
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -203,13 +203,13 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
         ))}
 
         {/* Botón para abrir diálogo Agregar Usuario */}
-        <button className="w-full mt-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2" onClick={()=>setOpenAdd(true)}>
+        <button className="w-full mt-2 px-4 py-3 bg-[#A0522D] hover:bg-[#8B5E3C] text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors" onClick={() => setOpenAdd(true)}>
           <Plus className="w-5 h-5" />
           <span>Agregar Usuario</span>
         </button>
 
         {/* Diálogo Editar Usuario (estilo inventario) */}
-        <Dialog open={openEdit} onOpenChange={(o)=>{ setOpenEdit(o); if(!o) setEditingId(null) }}>
+        <Dialog open={openEdit} onOpenChange={(o) => { setOpenEdit(o); if (!o) setEditingId(null) }}>
           <DialogContent className="max-w-md">
             <DialogHeader className="pb-1">
               <DialogTitle className="text-base">Editar Usuario</DialogTitle>
@@ -221,30 +221,30 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
               )}
               <div>
                 <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Nombre</label>
-                <input value={editNombre} onChange={(e)=>setEditNombre(e.target.value)} placeholder="Nombre" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} placeholder="Nombre" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div>
                 <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Apellidos</label>
-                <input value={editApellidos} onChange={(e)=>setEditApellidos(e.target.value)} placeholder="Apellidos" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input value={editApellidos} onChange={(e) => setEditApellidos(e.target.value)} placeholder="Apellidos" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div>
                 <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Email</label>
-                <input value={editEmail} onChange={(e)=>setEditEmail(e.target.value)} placeholder="Sin email" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Sin email" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Teléfono</label>
-                  <input value={editTelefono} onChange={(e)=>setEditTelefono(e.target.value)} placeholder="Sin teléfono" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                  <input value={editTelefono} onChange={(e) => setEditTelefono(e.target.value)} placeholder="Sin teléfono" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
                 </div>
                 <div>
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">RUT</label>
-                  <input value={editRut} onChange={(e)=>setEditRut(e.target.value)} placeholder="Sin RUT" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                  <input value={editRut} onChange={(e) => setEditRut(e.target.value)} placeholder="Sin RUT" className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Rol</label>
-                  <select value={editRol} onChange={(e)=>setEditRol(e.target.value as any)} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]">
+                  <select value={editRol} onChange={(e) => setEditRol(e.target.value as any)} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]">
                     <option value="ADMIN">ADMIN</option>
                     <option value="CAJERO">CAJERO</option>
                   </select>
@@ -253,7 +253,7 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Estado</label>
                   <select
                     value={editActivo ? 'activo' : 'inactivo'}
-                    onChange={(e)=>setEditActivo(e.target.value === 'activo')}
+                    onChange={(e) => setEditActivo(e.target.value === 'activo')}
                     className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
                   >
                     <option value="activo">✓ Activo</option>
@@ -282,23 +282,23 @@ export default function UsersPermissionsCard({ usuarios }: { usuarios: Usuario[]
             </DialogHeader>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <input placeholder="Nombre" value={adding.nombre} onChange={(e)=>setAdding(p=>({...p,nombre:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
-                <input placeholder="Apellidos" value={adding.apellidos} onChange={(e)=>setAdding(p=>({...p,apellidos:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Nombre" value={adding.nombre} onChange={(e) => setAdding(p => ({ ...p, nombre: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Apellidos" value={adding.apellidos} onChange={(e) => setAdding(p => ({ ...p, apellidos: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input placeholder="Email" value={adding.email} onChange={(e)=>setAdding(p=>({...p,email:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
-                <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e)=>setAdding(p=>({...p,password:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Email" value={adding.email} onChange={(e) => setAdding(p => ({ ...p, email: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e) => setAdding(p => ({ ...p, password: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e)=>setAdding(p=>({...p,password:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
-                <select value={adding.rol} onChange={(e)=>setAdding(p=>({...p,rol:e.target.value as any}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]">
+                <input placeholder="Contraseña" type="password" value={adding.password} onChange={(e) => setAdding(p => ({ ...p, password: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <select value={adding.rol} onChange={(e) => setAdding(p => ({ ...p, rol: e.target.value as any }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]">
                   <option value="ADMIN">ADMIN</option>
                   <option value="CAJERO">CAJERO</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input placeholder="RUT" value={adding.rut} onChange={(e)=>setAdding(p=>({...p,rut:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
-                <input placeholder="Teléfono" value={adding.telefono} onChange={(e)=>setAdding(p=>({...p,telefono:e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="RUT" value={adding.rut} onChange={(e) => setAdding(p => ({ ...p, rut: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
+                <input placeholder="Teléfono" value={adding.telefono} onChange={(e) => setAdding(p => ({ ...p, telefono: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" />
               </div>
             </div>
             <DialogFooter className="mt-4 pt-3 border-t gap-2">

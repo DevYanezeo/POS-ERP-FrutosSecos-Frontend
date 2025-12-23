@@ -156,3 +156,27 @@ export async function getLoteByCodigo(codigo: string) {
 	}
 }
 
+export async function getAllCodigosLotes(): Promise<string[] | null> {
+	try {
+		const url = `${API_BASE}/api/lote/all-codigos`
+		console.log(`[API] GET ${url}`)
+		const res = await fetch(url, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		})
+
+		if (res.status === 404) return null
+
+		if (!res.ok) {
+			const text = await res.text().catch(() => '')
+			throw new Error(text || `HTTP error ${res.status}`)
+		}
+
+		return res.json()
+	} catch (err: any) {
+		// Preserve original message but ensure it's an Error
+		const message = err?.message || String(err)
+		throw new Error(message)
+	}
+}
+

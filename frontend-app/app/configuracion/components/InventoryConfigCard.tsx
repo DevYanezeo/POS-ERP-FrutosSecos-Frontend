@@ -3,6 +3,8 @@
 import React from "react"
 import { setStockMinimo, setAlertasStock } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
+import ManageCategoriesDialog from "./ManageCategoriesDialog"
 
 type Inventario = {
   stockMinimo: number
@@ -12,8 +14,9 @@ type Inventario = {
 
 export default function InventoryConfigCard({ inventario, onChange }: { inventario: Inventario; onChange: (next: Inventario) => void }) {
   const { toast } = useToast()
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false)
   return (
-    <section className="col-span-5 bg-white rounded-2xl border border-[#E8E1D9] shadow-sm p-6">
+    <section className="col-span-12 lg:col-span-6 bg-white rounded-2xl border border-[#E8E1D9] shadow-sm p-6">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xl">📦</span>
         <h2 className="text-xl font-semibold text-[#2E2A26]">Configuración de Inventario</h2>
@@ -28,7 +31,7 @@ export default function InventoryConfigCard({ inventario, onChange }: { inventar
               const val = Number(e.target.value)
               onChange({ ...inventario, stockMinimo: val })
               setStockMinimo(val)
-              try { toast({ title: 'Stock mínimo actualizado', description: `Nuevo umbral: ${val}`, variant: 'success' }) } catch {}
+              try { toast({ title: 'Stock mínimo actualizado', description: `Nuevo umbral: ${val}`, variant: 'success' }) } catch { }
             }}
             className="w-full px-4 py-3 rounded-xl border-2 border-[#E8E1D9] bg-[#FBFAF7]"
           />
@@ -59,7 +62,22 @@ export default function InventoryConfigCard({ inventario, onChange }: { inventar
             <option>Automática</option>
           </select>
         </div>
+
+        <div className="pt-2 border-t border-gray-100">
+          <label className="block text-sm font-medium text-[#6A5F55] mb-2">Categorías de Productos</label>
+          <button
+            onClick={() => setShowCategoriesDialog(true)}
+            className="w-full px-4 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#A0522D] rounded-lg font-medium transition-colors border border-[#D4A373] border-dashed"
+          >
+            Gestionar Categorías
+          </button>
+        </div>
       </div>
+
+      <ManageCategoriesDialog
+        open={showCategoriesDialog}
+        onOpenChange={setShowCategoriesDialog}
+      />
     </section>
   )
 }

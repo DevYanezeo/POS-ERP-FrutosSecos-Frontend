@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote } from "@/lib/lotes"
+import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes } from "@/lib/lotes"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import {
   Dialog,
@@ -21,11 +21,10 @@ function Tabs({ activeTab, onTabChange, tabs }: { activeTab: string; onTabChange
         <button
           key={tab}
           onClick={() => onTabChange(tab)}
-          className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === tab 
-              ? 'text-[#A0522D] border-[#A0522D]' 
+          className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
+              ? 'text-[#A0522D] border-[#A0522D]'
               : 'text-gray-500 hover:text-gray-700 border-transparent'
-          }`}
+            }`}
         >
           {tab}
         </button>
@@ -42,12 +41,12 @@ interface EditProductDialogProps {
   onUpdate: (id: number, data: any) => Promise<void>
 }
 
-export default function EditProductDialog({ 
-  open, 
-  onOpenChange, 
-  product, 
+export default function EditProductDialog({
+  open,
+  onOpenChange,
+  product,
   onSuccess,
-  onUpdate 
+  onUpdate
 }: EditProductDialogProps) {
   const [activeTab, setActiveTab] = useState('Producto')
   const [editNombre, setEditNombre] = useState('')
@@ -82,7 +81,7 @@ export default function EditProductDialog({
           const idProducto = product?.idProducto || product?.id
           const lotesData = await listarLotesPorProducto(idProducto)
           setLotes(lotesData || [])
-        } catch(e: any) {
+        } catch (e: any) {
           console.error('Error cargando lotes:', e)
           setLotes([])
         } finally {
@@ -100,6 +99,54 @@ export default function EditProductDialog({
       setEditEstadoLote(editingLote.estado !== false)
     }
   }, [editingLote])
+
+  // Efecto para generar código automático al abrir "Crear Lote"
+  useEffect(() => {
+    if (showCreateLote && product?.nombre) {
+      const generarCodigo = async () => {
+        try {
+          // 1. Obtener todos los códigos existentes para asegurar unicidad
+          const todosLosCodigos = await getAllCodigosLotes() || []
+
+          // 2. Preparar partes del código
+          // Nombre: 3 primeras letras en mayúsculas
+          const nombreClean = product.nombre.trim().toUpperCase()
+          const prefix = nombreClean.substring(0, 3).replace(/[^A-Z]/g, 'X') // Fallback a X si hay chars raros
+
+          // Fecha: MM-YYYY
+          const now = new Date()
+          const mes = String(now.getMonth() + 1).padStart(2, '0')
+          const anio = now.getFullYear()
+
+          // 3. Buscar correlativo libre (NN)
+          let correlativo = 1
+          let nuevoCodigo = ''
+
+          // Loop para encontrar el primero libre
+          while (true) {
+            const nn = String(correlativo).padStart(2, '0')
+            nuevoCodigo = `${prefix}-${nn}-${mes}-${anio}`
+
+            // Verificar si existe (case insensitive por si acaso)
+            const existe = todosLosCodigos.some(c => c.toUpperCase() === nuevoCodigo)
+
+            if (!existe) break
+            correlativo++
+
+            // Safety break para evitar loop infinito si algo muy raro pasa
+            if (correlativo > 999) break
+          }
+
+          setCodigoLote(nuevoCodigo)
+        } catch (error) {
+          console.error('Error generando código automático:', error)
+          // Fallback silencioso, el usuario puede escribir manual
+        }
+      }
+
+      generarCodigo()
+    }
+  }, [showCreateLote, product])
 
   const handleCreateLote = async () => {
     if (!codigoLote) {
@@ -121,18 +168,18 @@ export default function EditProductDialog({
         fechaVencimiento: fechaVencimiento ? fechaVencimiento : null,
         estado: true
       }
-      
+
       await crearLote(lotePayload)
-  toast({ title: 'Lote creado', description: 'Lote creado exitosamente', variant: 'success' })
-      
+      toast({ title: 'Lote creado', description: 'Lote creado exitosamente', variant: 'success' })
+
       setCodigoLote('')
       setCantidadLote(0)
       setFechaVencimiento('')
       setShowCreateLote(false)
-      
+
       const lotesData = await listarLotesPorProducto(idProducto)
       setLotes(lotesData || [])
-    } catch(e: any) {
+    } catch (e: any) {
       const msg = String(e?.message || '')
       if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
         toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
@@ -158,12 +205,12 @@ export default function EditProductDialog({
       if (editEstadoLote !== (editingLote.estado !== false)) {
         await updateEstadoLote(idLote, editEstadoLote)
       }
-  toast({ title: 'Lote actualizado', description: 'Lote actualizado exitosamente', variant: 'success' })
+      toast({ title: 'Lote actualizado', description: 'Lote actualizado exitosamente', variant: 'success' })
       setEditingLote(null)
       const idProducto = product?.idProducto || product?.id
       const lotesData = await listarLotesPorProducto(idProducto)
       setLotes(lotesData || [])
-    } catch(e: any) {
+    } catch (e: any) {
       const msg = String(e?.message || '')
       if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
         toast({ title: 'Acceso denegado', description: 'No tiene permisos para acceder o modificar esta información.', variant: 'destructive' })
@@ -191,21 +238,21 @@ export default function EditProductDialog({
     setProcessing(true)
     try {
       const id = product?.idProducto || product?.id
-      
+
       // Mantener los lotes existentes para no afectar relaciones
       const existingLotes = Array.isArray(product?.lotes) ? product.lotes : (Array.isArray(lotes) ? lotes : [])
-      const payload: any = { 
-        nombre: editNombre, 
+      const payload: any = {
+        nombre: editNombre,
         descripcion: editDescripcion,
         unidad: editUnidad,
         estado: editEstado,
         lotes: existingLotes
       }
-      
+
       if (editPrecio !== '') {
         payload.precio = parseInt(String(editPrecio), 10)
       }
-      
+
       // Evitar PUT si no hay cambios en los campos del producto
       const original = {
         nombre: product?.nombre || '',
@@ -233,8 +280,8 @@ export default function EditProductDialog({
       await onUpdate(id, payload)
       onSuccess()
       onOpenChange(false)
-  toast({ title: 'Producto actualizado', description: 'Producto actualizado exitosamente', variant: 'success' })
-    } catch(e: any) { 
+      toast({ title: 'Producto actualizado', description: 'Producto actualizado exitosamente', variant: 'success' })
+    } catch (e: any) {
       console.error('EditProductDialog - Error:', e)
       const msg = String(e?.message || '')
       if (msg.includes('403') || msg.toLowerCase().includes('acceso denegado') || msg.toLowerCase().includes('sin permiso')) {
@@ -242,8 +289,8 @@ export default function EditProductDialog({
       } else {
         toast({ title: 'Error actualizando producto', description: msg || 'Error actualizando producto', variant: 'destructive' })
       }
-    } finally { 
-      setProcessing(false) 
+    } finally {
+      setProcessing(false)
     }
   }
 
@@ -257,9 +304,9 @@ export default function EditProductDialog({
               {activeTab === 'Producto' ? 'Información básica del producto' : `${lotes.length} lote${lotes.length !== 1 ? 's' : ''} asociado${lotes.length !== 1 ? 's' : ''}`}
             </DialogDescription>
           </DialogHeader>
-          
-          <Tabs 
-            activeTab={activeTab} 
+
+          <Tabs
+            activeTab={activeTab}
             onTabChange={setActiveTab}
             tabs={['Producto', 'Lotes']}
           />
@@ -269,23 +316,23 @@ export default function EditProductDialog({
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Nombre</label>
-                  <input 
-                    value={editNombre} 
-                    onChange={(e) => setEditNombre(e.target.value)} 
-                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" 
-                    placeholder="Nombre del producto" 
+                  <input
+                    value={editNombre}
+                    onChange={(e) => setEditNombre(e.target.value)}
+                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                    placeholder="Nombre del producto"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Precio</label>
-                    <input 
-                      type="number" 
-                      value={editPrecio} 
-                      onChange={(e) => setEditPrecio(e.target.value === '' ? '' : Number(e.target.value))} 
-                      className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" 
-                      placeholder="0" 
+                    <input
+                      type="number"
+                      value={editPrecio}
+                      onChange={(e) => setEditPrecio(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                      placeholder="0"
                     />
                   </div>
                   <div>
@@ -321,12 +368,12 @@ export default function EditProductDialog({
 
                 <div>
                   <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Descripción</label>
-                  <textarea 
-                    value={editDescripcion} 
-                    onChange={(e) => setEditDescripcion(e.target.value)} 
-                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]" 
-                    placeholder="Descripción opcional" 
-                    rows={3} 
+                  <textarea
+                    value={editDescripcion}
+                    onChange={(e) => setEditDescripcion(e.target.value)}
+                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                    placeholder="Descripción opcional"
+                    rows={3}
                   />
                 </div>
               </div>
@@ -339,7 +386,7 @@ export default function EditProductDialog({
                 ) : lotes.length === 0 ? (
                   <div className="bg-gray-50 border border-dashed border-gray-300 p-4 rounded text-center">
                     <div className="text-sm text-gray-600 mb-3">No hay lotes asociados</div>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowCreateLote(true)}
                       className="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-medium transition-colors"
@@ -353,17 +400,16 @@ export default function EditProductDialog({
                       const codigo = lote.codigoLote || lote.codigo || `Lote ${lote.idLote || lote.id}`
                       const stock = lote.stock || lote.cantidad || 0
                       const isHabilitado = lote.estado !== false
-                      
+
                       return (
                         <div key={idx} className="border rounded bg-white p-3 hover:bg-gray-50 flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <div className="font-medium text-sm text-gray-800">{codigo}</div>
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                isHabilitado 
-                                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isHabilitado
+                                  ? 'bg-green-100 text-green-800 border border-green-200'
                                   : 'bg-red-100 text-red-800 border border-red-200'
-                              }`}>
+                                }`}>
                                 {isHabilitado ? '✓ Habilitado' : '✕ Deshabilitado'}
                               </span>
                             </div>
@@ -384,7 +430,7 @@ export default function EditProductDialog({
                         </div>
                       )
                     })}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowCreateLote(true)}
                       className="w-full px-3 py-2 border-2 border-dashed border-emerald-600 hover:bg-emerald-50 text-emerald-700 rounded text-sm font-medium transition-colors"
@@ -397,14 +443,14 @@ export default function EditProductDialog({
             )}
           </div>
 
-          
-            <DialogFooter className="mt-4 pt-3 border-t gap-2">
+
+          <DialogFooter className="mt-4 pt-3 border-t gap-2">
             <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
               Cancelar
             </DialogClose>
-            <button 
-              disabled={processing} 
-                onClick={handleSave}
+            <button
+              disabled={processing}
+              onClick={handleSave}
               className="px-4 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {processing ? 'Guardando...' : 'Guardar Cambios'}
@@ -423,7 +469,7 @@ export default function EditProductDialog({
           <div className="space-y-3">
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Código del Lote</label>
-              <input 
+              <input
                 type="text"
                 value={codigoLote}
                 onChange={(e) => setCodigoLote(e.target.value)}
@@ -433,7 +479,7 @@ export default function EditProductDialog({
             </div>
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Cantidad</label>
-              <input 
+              <input
                 type="number"
                 value={cantidadLote}
                 onChange={(e) => setCantidadLote(e.target.value === '' ? '' : Number(e.target.value))}
@@ -444,7 +490,7 @@ export default function EditProductDialog({
             </div>
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
-              <input 
+              <input
                 type="date"
                 value={fechaVencimiento}
                 onChange={(e) => setFechaVencimiento(e.target.value)}
@@ -456,7 +502,7 @@ export default function EditProductDialog({
             <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
               Cancelar
             </DialogClose>
-            <button 
+            <button
               disabled={creatingLote}
               onClick={handleCreateLote}
               className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
@@ -478,7 +524,7 @@ export default function EditProductDialog({
           <div className="space-y-3">
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Cantidad</label>
-              <input 
+              <input
                 type="number"
                 value={editCantidad}
                 onChange={(e) => setEditCantidad(e.target.value === '' ? '' : Number(e.target.value))}
@@ -489,7 +535,7 @@ export default function EditProductDialog({
             </div>
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
-              <input 
+              <input
                 type="date"
                 value={editFechaVencimiento}
                 onChange={(e) => setEditFechaVencimiento(e.target.value)}
@@ -512,14 +558,14 @@ export default function EditProductDialog({
             <DialogClose className="px-3 py-1.5 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium">
               Cancelar
             </DialogClose>
-            
-            <button 
-            
+
+            <button
+
               disabled={updatingLote}
               onClick={handleEditLote}
               className="px-4 py-1.5 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
             >
-              {updatingLote ? 'Actualizando...' : 'Actualizar Lote' }
+              {updatingLote ? 'Actualizando...' : 'Actualizar Lote'}
             </button>
           </DialogFooter>
         </DialogContent>

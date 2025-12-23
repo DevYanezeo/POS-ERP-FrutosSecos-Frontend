@@ -25,15 +25,15 @@ class HttpError extends Error {
 
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const headers: Record<string,string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  
+
   // Agregar token CSRF si existe (para Spring Boot)
   const csrfToken = typeof window !== 'undefined' ? localStorage.getItem('csrf_token') : null
   if (csrfToken) {
     headers['X-XSRF-TOKEN'] = csrfToken
   }
-  
+
   return headers
 }
 
@@ -50,9 +50,9 @@ async function fetchWithAuth(input: string, init?: RequestInit, options?: { sile
       try {
         const bodyPreview = typeof mergedInit.body === 'string' ? mergedInit.body : JSON.stringify(mergedInit.body)
         console.log(`[API BODY] ${bodyPreview?.slice(0, 100)}${bodyPreview && bodyPreview.length > 100 ? '...' : ''}`)
-      } catch {}
+      } catch { }
     }
-  } catch {}
+  } catch { }
   const res = await fetch(input, mergedInit)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -161,7 +161,7 @@ export async function getProductosStockBajo(min?: number) {
       if (Array.isArray(all)) {
         return all.filter((p: any) => typeof p?.stock === 'number' && p.stock <= threshold)
       }
-    } catch {}
+    } catch { }
     throw e
   }
 }
@@ -211,6 +211,16 @@ export async function getCategorias() {
   return fetchWithAuth(`${API_BASE}/api/categorias`)
 }
 
+export async function createCategoria(categoria: { nombre: string }) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/crear`, {
+    method: 'POST',
+    body: JSON.stringify(categoria),
+  })
+}
+
+
+
+
 export async function getProductoByCodigo(codigo: string) {
   try {
     const url = `${API_BASE}/api/lote/codigo/${encodeURIComponent(codigo)}`
@@ -231,7 +241,7 @@ export async function getProductoByCodigo(codigo: string) {
     // Buscar coincidencia exacta por código de barras
     const productoExacto = productos?.find((p: any) => p.codigo === codigo)
     if (productoExacto) return productoExacto
-    
+
     // Si no hay coincidencia exacta, devolver el primero (búsqueda por nombre)
     return productos?.[0] || null
   } catch (err: any) {

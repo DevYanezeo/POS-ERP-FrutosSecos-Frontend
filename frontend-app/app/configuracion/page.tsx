@@ -1,9 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import CompanyInfoCard from "./components/CompanyInfoCard"
 import InventoryConfigCard from "./components/InventoryConfigCard"
-import SalesConfigCard from "./components/SalesConfigCard"
 import UsersPermissionsCard from "./components/UsersPermissionsCard"
 import { getUsuarios } from "@/lib/usuario"
 import { getStockMinimo, getAlertasStock } from "@/lib/config"
@@ -60,12 +58,12 @@ export default function ConfigurationPage() {
         </div>
 
         <div className="grid grid-cols-12 gap-6">
-          <CompanyInfoCard empresa={empresa} onChange={setEmpresa} />
           <InventoryConfigCard inventario={inventario} onChange={setInventario} />
-          <SalesConfigCard ventas={ventas} onChange={setVentas} />
           <UsersPermissionsCard usuarios={usuarios} />
+          
         </div>
       </div>
     </main>
   )
 }
+          
