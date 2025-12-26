@@ -253,3 +253,24 @@ export async function getProductoByCodigo(codigo: string) {
 
 
 
+
+export async function uploadImage(file: File) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${API_BASE}/api/productos/upload-image`, {
+    method: 'POST',
+    body: formData,
+    headers,
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `Error subiendo imagen: ${res.status}`)
+  }
+  return res.json()
+}

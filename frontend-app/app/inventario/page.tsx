@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias, uploadImage } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -58,6 +58,11 @@ export default function InventarioPage() {
   const [unidad, setUnidad] = useState("")
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
+
+  // Image Upload State
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   // state to keep selected variant (by id) for grouped display: key = product name
   const [selectedVariantByName, setSelectedVariantByName] = useState<Record<string, number>>({})
   // custom ordering of groups (by product name)
@@ -170,12 +175,30 @@ export default function InventarioPage() {
     }
     setAdding(true)
     try {
-      await saveProducto({ nombre, categoria, precio: Number(precio || 0), unidad, stock: 0 })
+      let imageUrl = ''
+      if (imageFile) {
+        const uploadRes = await uploadImage(imageFile)
+        imageUrl = uploadRes.imageUrl
+      }
+
+      await saveProducto({
+        nombre,
+        categoria,
+        precio: Number(precio || 0),
+        unidad,
+        stock: 0,
+        imagen: imageUrl
+      })
+
       setNombre('')
       setCategoria('')
       setPrecio('')
       setUnidad('')
       setStockVal('')
+      setImageFile(null)
+      setImagePreview(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+
       setShowAddForm(false)
       await fetchProductos()
       toast({ title: 'Producto agregado', description: 'El producto fue creado correctamente', variant: 'success' })
@@ -569,6 +592,41 @@ export default function InventarioPage() {
             <DialogDescription>Complete la información del nuevo producto</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            {/* Image Upload Section */}
+            <div className="md:col-span-2 flex flex-col items-center justify-center mb-4">
+              <div className="relative w-32 h-32 mb-2 bg-[#FBF7F4] border-2 border-dashed border-[#F5EDE4] rounded-xl flex items-center justify-center overflow-hidden group hover:border-[#A0522D]/50 transition-colors">
+                {imagePreview ? (
+                  <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                ) : (
+                  <div className="text-center p-4">
+                    <div className="w-8 h-8 mx-auto mb-2 text-[#D4A373]">
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <span className="text-xs text-[#7A6F66]">Subir imagen</span>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setImageFile(file)
+                      setImagePreview(URL.createObjectURL(file))
+                    }
+                  }}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              {imageFile && (
+                <button onClick={() => {
+                  setImageFile(null);
+                  setImagePreview(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }} className="text-xs text-red-500 hover:text-red-700 underline">Eliminar imagen</button>
+              )}
+            </div>
             <div>
               <label className="text-sm text-[#7A6F66] mb-1 block">Nombre</label>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" className="w-full px-3 py-2 border rounded" />
