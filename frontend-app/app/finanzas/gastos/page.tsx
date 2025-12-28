@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Plus, DollarSign, Trash2, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { listarGastos, eliminarGasto, Gasto } from "@/lib/gastos"
-import CreateGastoModal from "@/components/gastos/CreateGastoModal"
+import CreateGastoModal from "@/app/finanzas/gastos/components/CreateGastoModal"
 import { toast } from "sonner"
 
 export default function GastosPage() {

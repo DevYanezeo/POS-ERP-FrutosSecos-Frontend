@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes } from "@/lib/lotes"
+import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes, updateCostoLote } from "@/lib/lotes"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import {
   Dialog,
@@ -22,8 +22,8 @@ function Tabs({ activeTab, onTabChange, tabs }: { activeTab: string; onTabChange
           key={tab}
           onClick={() => onTabChange(tab)}
           className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
-              ? 'text-[#A0522D] border-[#A0522D]'
-              : 'text-gray-500 hover:text-gray-700 border-transparent'
+            ? 'text-[#A0522D] border-[#A0522D]'
+            : 'text-gray-500 hover:text-gray-700 border-transparent'
             }`}
         >
           {tab}
@@ -60,11 +60,13 @@ export default function EditProductDialog({
   const [showCreateLote, setShowCreateLote] = useState(false)
   const [codigoLote, setCodigoLote] = useState('')
   const [cantidadLote, setCantidadLote] = useState<number | ''>(0)
+  const [costoLote, setCostoLote] = useState<number | ''>(0)
   const [fechaVencimiento, setFechaVencimiento] = useState('')
   const [creatingLote, setCreatingLote] = useState(false)
   const [editingLote, setEditingLote] = useState<any | null>(null)
   const [editFechaVencimiento, setEditFechaVencimiento] = useState('')
   const [editCantidad, setEditCantidad] = useState<number | ''>(0)
+  const [editCosto, setEditCosto] = useState<number | ''>(0)
   const [editEstadoLote, setEditEstadoLote] = useState<boolean>(true)
   const [updatingLote, setUpdatingLote] = useState(false)
 
@@ -96,6 +98,7 @@ export default function EditProductDialog({
     if (editingLote) {
       setEditFechaVencimiento(editingLote.fechaVencimiento ? editingLote.fechaVencimiento.split('T')[0] : '')
       setEditCantidad(editingLote.cantidad || editingLote.stock || 0)
+      setEditCosto(editingLote.costo || 0)
       setEditEstadoLote(editingLote.estado !== false)
     }
   }, [editingLote])
@@ -165,6 +168,7 @@ export default function EditProductDialog({
         producto: { idProducto },
         codigoLote: codigoLote,
         cantidad: Number(cantidadLote),
+        costo: Number(costoLote),
         fechaVencimiento: fechaVencimiento ? fechaVencimiento : null,
         estado: true
       }
@@ -174,6 +178,7 @@ export default function EditProductDialog({
 
       setCodigoLote('')
       setCantidadLote(0)
+      setCostoLote(0)
       setFechaVencimiento('')
       setShowCreateLote(false)
 
@@ -201,6 +206,9 @@ export default function EditProductDialog({
       }
       if (Number(editCantidad) !== (editingLote.cantidad || editingLote.stock)) {
         await updateCantidadLote(idLote, Number(editCantidad))
+      }
+      if (Number(editCosto) !== (editingLote.costo || 0)) {
+        await updateCostoLote(idLote, Number(editCosto))
       }
       if (editEstadoLote !== (editingLote.estado !== false)) {
         await updateEstadoLote(idLote, editEstadoLote)
@@ -407,8 +415,8 @@ export default function EditProductDialog({
                             <div className="flex items-center gap-2 mb-1">
                               <div className="font-medium text-sm text-gray-800">{codigo}</div>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isHabilitado
-                                  ? 'bg-green-100 text-green-800 border border-green-200'
-                                  : 'bg-red-100 text-red-800 border border-red-200'
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : 'bg-red-100 text-red-800 border border-red-200'
                                 }`}>
                                 {isHabilitado ? '✓ Habilitado' : '✕ Deshabilitado'}
                               </span>
@@ -489,6 +497,20 @@ export default function EditProductDialog({
               />
             </div>
             <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Costo de Adquisición (Unitario)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={costoLote}
+                  onChange={(e) => setCostoLote(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  className="w-full pl-6 pr-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                />
+              </div>
+            </div>
+            <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
               <input
                 type="date"
@@ -532,6 +554,20 @@ export default function EditProductDialog({
                 min="1"
                 className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
               />
+            </div>
+            <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Costo de Adquisición (Unitario)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={editCosto}
+                  onChange={(e) => setEditCosto(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  className="w-full pl-6 pr-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                />
+              </div>
             </div>
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
