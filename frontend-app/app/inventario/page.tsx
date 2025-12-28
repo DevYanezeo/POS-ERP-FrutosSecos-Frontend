@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias, uploadImage } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -59,10 +58,6 @@ export default function InventarioPage() {
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
 
-  // Image Upload State
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   // state to keep selected variant (by id) for grouped display: key = product name
   const [selectedVariantByName, setSelectedVariantByName] = useState<Record<string, number>>({})
   // custom ordering of groups (by product name)
@@ -100,7 +95,6 @@ export default function InventarioPage() {
       price: `CLP $${(p.precio ?? 0).toLocaleString()}`,
       unit: unit,
       stock: `${p.stock ?? 0} unidades`,
-      image: p.imagen || '/imagenes-productos/Almendras Orgánica.png',
       raw: p,
     }
   })
@@ -175,19 +169,12 @@ export default function InventarioPage() {
     }
     setAdding(true)
     try {
-      let imageUrl = ''
-      if (imageFile) {
-        const uploadRes = await uploadImage(imageFile)
-        imageUrl = uploadRes.imageUrl
-      }
-
       await saveProducto({
         nombre,
         categoria,
         precio: Number(precio || 0),
         unidad,
-        stock: 0,
-        imagen: imageUrl
+        stock: 0
       })
 
       setNombre('')
@@ -195,9 +182,6 @@ export default function InventarioPage() {
       setPrecio('')
       setUnidad('')
       setStockVal('')
-      setImageFile(null)
-      setImagePreview(null)
-      if (fileInputRef.current) fileInputRef.current.value = ''
 
       setShowAddForm(false)
       await fetchProductos()
@@ -592,41 +576,6 @@ export default function InventarioPage() {
             <DialogDescription>Complete la información del nuevo producto</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            {/* Image Upload Section */}
-            <div className="md:col-span-2 flex flex-col items-center justify-center mb-4">
-              <div className="relative w-32 h-32 mb-2 bg-[#FBF7F4] border-2 border-dashed border-[#F5EDE4] rounded-xl flex items-center justify-center overflow-hidden group hover:border-[#A0522D]/50 transition-colors">
-                {imagePreview ? (
-                  <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                ) : (
-                  <div className="text-center p-4">
-                    <div className="w-8 h-8 mx-auto mb-2 text-[#D4A373]">
-                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <span className="text-xs text-[#7A6F66]">Subir imagen</span>
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      setImageFile(file)
-                      setImagePreview(URL.createObjectURL(file))
-                    }
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-              </div>
-              {imageFile && (
-                <button onClick={() => {
-                  setImageFile(null);
-                  setImagePreview(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }} className="text-xs text-red-500 hover:text-red-700 underline">Eliminar imagen</button>
-              )}
-            </div>
             <div>
               <label className="text-sm text-[#7A6F66] mb-1 block">Nombre</label>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" className="w-full px-3 py-2 border rounded" />
@@ -776,26 +725,15 @@ export default function InventarioPage() {
                     onDrop={(e) => handleDropOn(e, group.name)}
                     onDragEnd={handleDragEnd}
                     className={`bg-white rounded-xl border transition-all duration-200 hover:shadow-lg overflow-hidden cursor-grab ${isLowStock ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : 'border-[#F5EDE4] hover:border-[#A0522D]/30'}`} style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                    {/* Product Image */}
-                    <div className="relative p-0">
+                    {/* Product Info - group header + variant selector */}
+                    <div className="relative">
                       {isLowStock && (
-                        <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5 shadow-sm">
+                        <div className="absolute -top-2 left-4 z-10 px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5 shadow-sm">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                           Stock Bajo
                         </div>
                       )}
-                      <div className="aspect-square rounded-t-xl overflow-hidden bg-[#FBF7F4] flex items-center justify-center">
-                        <Image
-                          src={product.image}
-                          alt={group.name}
-                          width={400}
-                          height={400}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
                     </div>
-
-                    {/* Product Info - group header + variant selector */}
                     <div className="p-6 space-y-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -908,9 +846,6 @@ export default function InventarioPage() {
                         <tr key={group.name} className={`transition-colors ${isLowStock ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-[#FBF7F4]/50'}`}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-[#FBF7F4] flex items-center justify-center overflow-hidden">
-                                <Image src={p.image} alt={group.name} width={40} height={40} className="object-cover w-full h-full" />
-                              </div>
                               <div>
                                 <div className="text-sm font-medium text-[#2E2A26]">{group.name}</div>
                                 {items.length > 1 && (

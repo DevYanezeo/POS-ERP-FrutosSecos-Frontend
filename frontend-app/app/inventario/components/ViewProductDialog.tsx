@@ -92,13 +92,6 @@ export default function ViewProductDialog({ open, onOpenChange, product }: ViewP
         <div className="mt-2 space-y-2">
           <div>
             <div className="flex gap-4">
-              <div className="w-24 h-24 bg-[#F3F2F1] rounded overflow-hidden">
-                <img 
-                  src={product.imagen || '/imagenes-productos/Almendras Orgánica.png'} 
-                  alt={product.nombre || product.name} 
-                  className="w-full h-full object-cover" 
-                />
-              </div>
               <div>
                 <div className="text-lg font-semibold">{product.nombre || product.name}</div>
                 <div className="text-sm text-[#A0522D]">Precio: CLP ${product.precio ?? product.price}</div>
