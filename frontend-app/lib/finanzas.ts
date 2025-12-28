@@ -473,6 +473,17 @@ export async function exportarReporteExcel(periodo: 'mes' | 'anio', fecha: Date 
     a.remove()
 }
 
+/**
+ * Obtiene las ventas totales de cada día de la semana actual (Lun-Dom).
+ * Retorna un arreglo de 7 números (índice 0 = Lunes, 6 = Domingo).
+ */
+export async function getVentasSemanaActual(): Promise<number[]> {
+    const url = `${API_BASE}/api/reportes/ventas/semana-actual`
+    const data = await fetchWithAuth(url)
+    console.log('[DEBUG] Ventas semanales del backend:', data)
+    return data
+}
+
 export default {
     obtenerProductoMasVendido,
     obtenerProductoMenosVendido,
