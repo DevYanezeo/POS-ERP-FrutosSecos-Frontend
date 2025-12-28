@@ -25,14 +25,18 @@ export default function InventoryConfigCard({ inventario, onChange }: { inventar
         <div>
           <label className="block text-sm font-medium text-[#6A5F55] mb-1">Stock Mínimo por Defecto</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={inventario.stockMinimo}
             onChange={(e) => {
-              const val = Number(e.target.value)
+              const inputValue = e.target.value.replace(/\D/g, '') // Solo dígitos
+              const val = inputValue === '' ? 0 : parseInt(inputValue, 10)
               onChange({ ...inventario, stockMinimo: val })
               setStockMinimo(val)
               try { toast({ title: 'Stock mínimo actualizado', description: `Nuevo umbral: ${val}`, variant: 'success' }) } catch { }
             }}
+            onFocus={(e) => e.target.select()}
             className="w-full px-4 py-3 rounded-xl border-2 border-[#E8E1D9] bg-[#FBFAF7]"
           />
         </div>
