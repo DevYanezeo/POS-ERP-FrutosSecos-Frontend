@@ -1,5 +1,6 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 import { toast } from '@/hooks/use-toast'
+import { getStockMinimo } from '@/lib/config'
 
 export interface Producto {
   id?: number
@@ -15,21 +16,28 @@ export interface Producto {
   [key: string]: any
 }
 
+class HttpError extends Error {
+  constructor(message: string, public status: number) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const headers: Record<string,string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  
+
   // Agregar token CSRF si existe (para Spring Boot)
   const csrfToken = typeof window !== 'undefined' ? localStorage.getItem('csrf_token') : null
   if (csrfToken) {
     headers['X-XSRF-TOKEN'] = csrfToken
   }
-  
+
   return headers
 }
 
-async function fetchWithAuth(input: string, init?: RequestInit) {
+async function fetchWithAuth(input: string, init?: RequestInit, options?: { silent403?: boolean }) {
   const defaultHeaders = getAuthHeaders()
   const mergedInit: RequestInit = {
     ...init,
@@ -42,9 +50,9 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
       try {
         const bodyPreview = typeof mergedInit.body === 'string' ? mergedInit.body : JSON.stringify(mergedInit.body)
         console.log(`[API BODY] ${bodyPreview?.slice(0, 100)}${bodyPreview && bodyPreview.length > 100 ? '...' : ''}`)
-      } catch {}
+      } catch { }
     }
-  } catch {}
+  } catch { }
   const res = await fetch(input, mergedInit)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -76,8 +84,8 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
       throw new Error(errMsg)
     }
 
-    // Treat 403 (forbidden) with friendly toast
-    if (res.status === 403) {
+    // Treat 403 (forbidden) with friendly toast, unless silent mode is enabled
+    if (res.status === 403 && !options?.silent403) {
       try {
         toast({ title: 'Acceso denegado', description: 'No tienes permiso para acceder a esta funcionalidad. Contacta al administrador.', variant: 'destructive' })
       } catch (e) { console.debug('toast error', e) }
@@ -85,7 +93,8 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
 
     // As a pragmatic fallback: if we have a token but receive 401/403 with empty body,
     // treat it as session expiration to avoid leaving the user in a broken state.
-    if (tokenPresent && (res.status === 401 || res.status === 403) && (!text || text.trim() === '')) {
+    // Skip this if silent403 is enabled (background operations shouldn't redirect)
+    if (!options?.silent403 && tokenPresent && (res.status === 401 || res.status === 403) && (!text || text.trim() === '')) {
       try { toast({ title: 'Sesión expirada', description: 'Por favor inicie sesión nuevamente.', variant: 'destructive' }) } catch (e) { console.debug('toast error', e) }
       try {
         if (typeof window !== 'undefined') {
@@ -96,7 +105,7 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
       } catch (e) { console.debug('logout redirect error', e) }
     }
 
-    throw new Error(text || `HTTP error ${res.status}`)
+    throw new HttpError(text || `HTTP error ${res.status}`, res.status)
   }
   console.log(`[API] ${method} ${input} -> ${res.status}`)
   return res.json().catch(() => null)
@@ -131,8 +140,30 @@ export async function getProductosByCategoria(categoriaId: number) {
   return fetchWithAuth(`${API_BASE}/api/productos/categoria/${categoriaId}`)
 }
 
-export async function getProductosStockBajo() {
-  return fetchWithAuth(`${API_BASE}/api/productos/stock-bajo`)
+// Obtiene productos con stock bajo. Usa el umbral global si no se pasa uno.
+export async function getProductosStockBajo(min?: number) {
+  const threshold = typeof min === 'number' ? min : getStockMinimo()
+  // Backend actualizado: usa path param /stock-bajo/{min}
+  const url = `${API_BASE}/api/productos/stock-bajo/${encodeURIComponent(String(threshold))}`
+  try {
+    const data = await fetchWithAuth(url, undefined, { silent403: true })
+    if (Array.isArray(data)) return data
+    return data
+  } catch (e: any) {
+    // If 403 (permission denied), silently return empty array for background operations
+    if (e instanceof HttpError && e.status === 403) {
+      console.log('[API] Stock bajo: acceso denegado, retornando array vacío')
+      return []
+    }
+    // Fallback: intentar obtener todos y filtrar client-side por "stock"
+    try {
+      const all = await getProductos()
+      if (Array.isArray(all)) {
+        return all.filter((p: any) => typeof p?.stock === 'number' && p.stock <= threshold)
+      }
+    } catch { }
+    throw e
+  }
 }
 
 export async function saveProducto(producto: any) {
@@ -146,6 +177,15 @@ export async function updateProducto(id: number, producto: any) {
   return fetchWithAuth(`${API_BASE}/api/productos/${id}`, {
     method: 'PUT',
     body: JSON.stringify(producto),
+  })
+}
+
+// Actualiza parcialmente un producto usando el nuevo endpoint PATCH /api/productos/{id}/parcial
+// ParcialDTO: envía solo los campos que deseas modificar (e.g., nombre, precio, unidad, estado, descripcion)
+export async function updateProductoParcial(id: number, parcialDto: any) {
+  return fetchWithAuth(`${API_BASE}/api/productos/${id}/parcial`, {
+    method: 'PUT',
+    body: JSON.stringify(parcialDto),
   })
 }
 
@@ -171,9 +211,19 @@ export async function getCategorias() {
   return fetchWithAuth(`${API_BASE}/api/categorias`)
 }
 
+export async function createCategoria(categoria: { nombre: string }) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/crear`, {
+    method: 'POST',
+    body: JSON.stringify(categoria),
+  })
+}
+
+
+
+
 export async function getProductoByCodigo(codigo: string) {
   try {
-    const url = `${API_BASE}/api/productos/buscar?nombre=${encodeURIComponent(codigo)}`
+    const url = `${API_BASE}/api/lote/codigo/${encodeURIComponent(codigo)}`
     console.log(`[API] GET ${url}`)
     const res = await fetch(url, {
       method: 'GET',
@@ -191,11 +241,36 @@ export async function getProductoByCodigo(codigo: string) {
     // Buscar coincidencia exacta por código de barras
     const productoExacto = productos?.find((p: any) => p.codigo === codigo)
     if (productoExacto) return productoExacto
-    
+
     // Si no hay coincidencia exacta, devolver el primero (búsqueda por nombre)
     return productos?.[0] || null
   } catch (err: any) {
     const message = err?.message || String(err)
     throw new Error(message)
   }
+}
+
+
+
+
+
+export async function uploadImage(file: File) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${API_BASE}/api/productos/upload-image`, {
+    method: 'POST',
+    body: formData,
+    headers,
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `Error subiendo imagen: ${res.status}`)
+  }
+  return res.json()
 }

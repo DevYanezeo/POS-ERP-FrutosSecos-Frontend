@@ -13,16 +13,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useEffect, useState } from 'react'
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
+  const [userName, setUserName] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) router.push("/login")
+
+    const storedName = localStorage.getItem("user_nombre")
+    setUserName(storedName)
+    const storedRole = localStorage.getItem("user_rol")
+    const normalized = (storedRole || '').toUpperCase()
+    // allow variants like 'ADMIN', 'Administrador', 'admin'
+    setIsAdmin(normalized === 'ADMIN' || normalized === 'ADMINISTRADOR')
+  }, [router])
 
   const isInicio = pathname === '/' || pathname === '/dashboard'
   const isInventario = pathname?.startsWith('/inventario')
   const isVentas = pathname === '/ventas' && !pathname?.includes('/historial')
   const isHistorial = pathname?.startsWith('/ventas/historial')
   const isFinanzas = pathname === '/finanzas'
+  const isConfig = pathname?.startsWith('/configuracion')
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -83,12 +99,21 @@ export default function Navbar() {
               <BarChart2 className="w-4 h-4 mr-2" />
               <span className="hidden lg:inline">Finanzas</span>
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/configuracion')}
+                className={`flex items-center h-full px-4 rounded-lg text-base font-medium transition-colors ${isConfig ? 'bg-[#9A5128] text-white shadow-sm rounded-xl' : 'text-[#7A6F66] hover:bg-white'}`}>
+                <Settings className="w-4 h-4 mr-2" />
+                <span className="hidden lg:inline">Config</span>
+              </button>
+            )}
 
           </main>
         </nav>
 
         {/* Acciones a la derecha */}
         <div className="flex items-center gap-4">
+          
           <StockAlert />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -97,7 +122,13 @@ export default function Navbar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => router.push('/configuracion')}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Mi cuenta
+              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
                 <LogOut className="w-4 h-4 mr-2" />
@@ -105,7 +136,7 @@ export default function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
             <div className="text-base font-bold">
-              {localStorage.getItem('user_nombre') || 'Invitado'}
+              {userName || "Invitado"}
             </div>
           </DropdownMenu>
         </div>

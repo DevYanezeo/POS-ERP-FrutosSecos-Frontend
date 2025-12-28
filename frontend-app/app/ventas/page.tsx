@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { getProductos, buscarProductos, getCategorias, getProductoByCodigo } from '@/lib/productos'
 import { getLoteByCodigo } from '@/lib/lotes'
 import { confirmarVenta } from '@/lib/ventas'
+import { buscarOCrearCliente } from '@/lib/clientesFiado'
 import { useRouter } from 'next/navigation'
 import ScanProductoInput from './components/ScanProductoInput'
 import { Loader2, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
@@ -85,6 +86,9 @@ export default function VentasPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showFiadoModal, setShowFiadoModal] = useState(false)
   const [clienteNombre, setClienteNombre] = useState('')
+  const [clienteTelefono, setClienteTelefono] = useState('')
+  const [clienteEmail, setClienteEmail] = useState('')
+  const [clienteRut, setClienteRut] = useState('')
   const [fechaVencimiento, setFechaVencimiento] = useState('')
 
   useEffect(() => {
@@ -118,9 +122,22 @@ export default function VentasPage() {
     setTimeout(() => setNotification(null), 4000)
   }
 
-  function handleProductoScanned(producto: any) {
-    addToCart(producto, null)
-    showNotification('success', `${producto.nombre} agregado al carrito`)
+  function handleProductoScanned(scanned: any) {
+    // Permitir tanto producto directo como objeto de lote { producto, idLote, cantidad, ... }
+    const isLote = scanned && typeof scanned === 'object' && 'producto' in scanned
+    if (isLote) {
+      const p = scanned.producto || {}
+      const loteId = scanned.idLote ?? scanned.id ?? null
+      const stockDesdeLote = scanned.cantidad ?? p.stock ?? 0
+      // Pasar un objeto de producto enriquecido con stock del lote
+      const productoParaCarrito = { ...p, stock: stockDesdeLote }
+      addToCart(productoParaCarrito, loteId)
+      showNotification('success', `${p.nombre || 'Producto'} agregado al carrito`)
+      return
+    }
+    // Caso estándar: producto directo
+    addToCart(scanned, null)
+    showNotification('success', `${scanned?.nombre || 'Producto'} agregado al carrito`)
   }
 
   function handleScanError(message: string) {
@@ -130,13 +147,14 @@ export default function VentasPage() {
   function addToCart(producto: any, loteId: number | null = null) {
     // normalize product id: backend shape may vary (id | productoId | idProducto | _id)
     const pid = producto?.id ?? producto?.productoId ?? producto?.idProducto ?? producto?._id ?? null
-    const stockDisponible = producto?.stock ?? 0
+    // Preferir stock del lote cuando esté presente; si no, usar stock del producto
+    const stockDisponible = (typeof producto?.stockDisponible === 'number' ? producto.stockDisponible : undefined) ?? producto?.stock ?? 0
 
     console.log('[VENTAS] addToCart called', { producto, resolvedId: pid, loteId, stock: stockDisponible })
 
     // Validar stock disponible
     if (stockDisponible <= 0) {
-      showNotification('error', `Sin stock disponible para ${producto?.nombre || 'este producto'}`)
+      showNotification('error', `${loteId ? 'Sin stock disponible en el lote' : 'Sin stock disponible para'} ${producto?.nombre || 'este producto'}`)
       return
     }
 
@@ -147,7 +165,7 @@ export default function VentasPage() {
         // Verificar que no exceda el stock al incrementar
         const nuevaCantidad = existing.cantidad + 1
         if (nuevaCantidad > stockDisponible) {
-          showNotification('warning', `Stock insuficiente. Disponible: ${stockDisponible} unidades`)
+          showNotification('warning', `${loteId ? 'Stock de lote insuficiente' : 'Stock insuficiente'}. Disponible: ${stockDisponible} unidades`)
           return prev // No incrementar
         }
         return prev.map(p => p === existing ? { ...p, cantidad: nuevaCantidad } : p)
@@ -160,7 +178,7 @@ export default function VentasPage() {
         cantidad: 1,
         precioUnitario: producto?.precio ?? producto?.precioUnitario ?? 0,
         idLote: loteId,
-        stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores
+        stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
       }]
     })
   }
@@ -327,7 +345,13 @@ export default function VentasPage() {
     fetchProductos()
   }
 
-  async function handleConfirm(metodoPago: string, esFiado: boolean = false, clienteId?: number | null, fechaVencimientoPago?: string | null) {
+  async function handleConfirm(
+    metodoPago: string,
+    esFiado: boolean = false,
+    clienteId?: number | null,
+    fechaVencimientoPago?: string | null,
+    clienteData?: { nombre: string; telefono?: string | null; email?: string | null; rut?: string | null } | null
+  ) {
     if (cart.length === 0) {
       showNotification('warning', 'El carrito está vacío')
       return
@@ -416,6 +440,14 @@ export default function VentasPage() {
         precioUnitario: Math.round(Number(it.precioUnitario)),
         idLote: it.idLote == null ? null : Number(it.idLote),
       }))
+    }
+
+    // Agregar datos del cliente si están disponibles
+    if (clienteData) {
+      payload.clienteNombre = clienteData.nombre
+      if (clienteData.telefono) payload.clienteTelefono = clienteData.telefono
+      if (clienteData.email) payload.clienteEmail = clienteData.email
+      if (clienteData.rut) payload.clienteRut = clienteData.rut
     }
 
     try {
@@ -544,8 +576,11 @@ export default function VentasPage() {
                   productos.map((producto) => {
                     const pid = producto?.id ?? producto?.productoId ?? producto?.idProducto ?? producto?._id
                     const stock = producto.stock || 0
-                    const sinStock = stock === 0
-                    const stockBajo = stock > 0 && stock <= 5
+                    const loteCount = Array.isArray(producto?.lotes) ? producto.lotes.length : 0
+                    const sinLotes = loteCount === 0
+                    // Marcar como sin stock visualmente también cuando no hay lotes activos
+                    const sinStock = stock === 0 || sinLotes
+                    const stockBajo = !sinStock && stock <= 5
 
                     return (
                       <div
@@ -562,7 +597,7 @@ export default function VentasPage() {
                               <h3 className="font-semibold text-lg text-gray-800">{producto.nombre}</h3>
                               {sinStock && (
                                 <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">
-                                  SIN STOCK
+                                  {stock === 0 ? 'SIN STOCK' : 'SIN LOTES'}
                                 </span>
                               )}
                               {stockBajo && (
@@ -884,7 +919,8 @@ export default function VentasPage() {
               <p className="text-orange-100 text-sm mt-1">Complete los datos del cliente</p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Nombre del Cliente */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre del Cliente *
@@ -893,11 +929,54 @@ export default function VentasPage() {
                   type="text"
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
-                  placeholder="Ingrese nombre del cliente"
+                  placeholder="Ingrese nombre completo"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
                 />
               </div>
 
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={clienteTelefono}
+                  onChange={(e) => setClienteTelefono(e.target.value)}
+                  placeholder="Ej: +56 9 1234 5678"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={clienteEmail}
+                  onChange={(e) => setClienteEmail(e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* RUT */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  RUT
+                </label>
+                <input
+                  type="text"
+                  value={clienteRut}
+                  onChange={(e) => setClienteRut(e.target.value)}
+                  placeholder="12.345.678-9"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-lg"
+                />
+              </div>
+
+              {/* Fecha de Vencimiento */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Fecha de Vencimiento (opcional)
@@ -910,6 +989,7 @@ export default function VentasPage() {
                 />
               </div>
 
+              {/* Total a Fiar */}
               <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
                 <p className="text-sm text-orange-800 font-semibold">Total a Fiar:</p>
                 <p className="text-3xl font-bold text-orange-600 mt-1">
@@ -917,10 +997,11 @@ export default function VentasPage() {
                 </p>
               </div>
 
+              {/* Nota informativa */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Nota:</strong> El nombre del cliente se registrará para referencia.
-                  Cuando se implemente el módulo de clientes, podrá asociarse correctamente.
+                  <strong>Nota:</strong> Los datos del cliente se registrarán para referencia y seguimiento.
+                  Complete la mayor cantidad de información posible para facilitar el contacto.
                 </p>
               </div>
             </div>
@@ -930,6 +1011,9 @@ export default function VentasPage() {
                 onClick={() => {
                   setShowFiadoModal(false)
                   setClienteNombre('')
+                  setClienteTelefono('')
+                  setClienteEmail('')
+                  setClienteRut('')
                   setFechaVencimiento('')
                 }}
                 className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
@@ -943,19 +1027,49 @@ export default function VentasPage() {
                     return
                   }
 
-                  // Convertir fecha a formato dd/MM/yyyy si existe
-                  let fechaFormateada = null
-                  if (fechaVencimiento) {
-                    const [year, month, day] = fechaVencimiento.split('-')
-                    fechaFormateada = `${day}/${month}/${year}`
-                  }
+                  try {
+                    // Convertir fecha a formato dd/MM/yyyy si existe
+                    let fechaFormateada = null
+                    if (fechaVencimiento) {
+                      const [year, month, day] = fechaVencimiento.split('-')
+                      fechaFormateada = `${day}/${month}/${year}`
+                    }
 
-                  setShowFiadoModal(false)
-                  // Por ahora usamos clienteId null ya que no tenemos módulo de clientes
-                  // El backend guardará el nombre en la descripción o se puede crear el cliente
-                  await handleConfirm('FIADO', true, null, fechaFormateada)
-                  setClienteNombre('')
-                  setFechaVencimiento('')
+                    // Crear objeto con datos del cliente
+                    const clienteData = {
+                      nombre: clienteNombre.trim(),
+                      telefono: clienteTelefono.trim() || null,
+                      email: clienteEmail.trim() || null,
+                      rut: clienteRut.trim() || null
+                    }
+
+                    setShowFiadoModal(false)
+                    showNotification('warning', 'Buscando/creando cliente...')
+
+                    // Buscar o crear el cliente automáticamente
+                    const cliente = await buscarOCrearCliente(clienteData)
+
+                    if (!cliente || !cliente.idCliente) {
+                      showNotification('error', 'Error al crear/buscar cliente')
+                      return
+                    }
+
+                    console.log('[Fiado] Cliente obtenido:', cliente)
+
+                    // Confirmar venta con el clienteId correcto
+                    await handleConfirm('FIADO', true, cliente.idCliente, fechaFormateada, clienteData)
+
+                    // Limpiar campos
+                    setClienteNombre('')
+                    setClienteTelefono('')
+                    setClienteEmail('')
+                    setClienteRut('')
+                    setFechaVencimiento('')
+                  } catch (error: any) {
+                    console.error('[Fiado] Error:', error)
+                    showNotification('error', 'Error al procesar fiado: ' + error.message)
+                    setShowFiadoModal(true) // Reabrir modal para que el usuario pueda corregir
+                  }
                 }}
                 disabled={!clienteNombre.trim()}
                 className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"

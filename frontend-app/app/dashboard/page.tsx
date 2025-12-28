@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import StockAlert from "./components/StockAlert"
 import ExpirationAlert from "./components/ExpirationAlert"
@@ -11,9 +11,13 @@ import Alerts from "./components/Alerts"
 export default function DashboardPage() {
   const router = useRouter()
 
+  const [userName, setUserName] = useState<string | null>(null)
+  
   useEffect(() => {
     const token = localStorage.getItem("token")
-    if (!token) router.push('/login')
+    if (!token) router.push("/login")
+      const storedName = localStorage.getItem("user_nombre")
+    setUserName(storedName)
   }, [router])
 
   // Fecha de hoy formateada en español (ej: "Miércoles, 11 Sep 2024")
@@ -31,7 +35,7 @@ export default function DashboardPage() {
         <div className="rounded-md bg-[#F9F6F3] p-6  mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold">¡Bienvenid@ {localStorage.getItem("user_nombre")}! <span className="ml-2">👋</span></h1>
+              <h1 className="text-2xl font-semibold">¡Bienvenid@ {userName || "Invitado"}! <span className="ml-2">👋</span></h1>
               <p className="text-sm text-muted-foreground mt-1">Aquí tienes un resumen de tu negocio hoy</p>
             </div>
             <div className="text-sm text-muted-foreground">{fechaHoyStr}</div>

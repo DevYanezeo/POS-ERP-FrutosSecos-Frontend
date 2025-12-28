@@ -27,10 +27,8 @@ export default function ExpirationAlert({ dias = 30 }: { dias?: number }) {
       const data = await findLotesVencimientoProximoDTO(dias)
       const arr = data || []
       setAlerts(arr)
-      if (arr.length > 0) {
-        toast({ title: `Vencimientos próximos: ${arr.length} lotes`, description: 'Revisa lotes con fecha de vencimiento cercana.' })
-      }
-    } catch (e:any) {
+      // Notificación automática desactivada para evitar molestias
+    } catch (e: any) {
       // registrar error en consola para ayudar al debugging en dev
       console.error('Error fetching expiration alerts', e)
     }

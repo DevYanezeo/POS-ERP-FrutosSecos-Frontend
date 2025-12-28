@@ -3,7 +3,15 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { listarFiados, registrarPago, obtenerPagos } from '@/lib/ventas'
-import { Calendar, DollarSign, User, AlertCircle, CheckCircle, Clock, ArrowLeft } from 'lucide-react'
+import { Calendar, DollarSign, User, AlertCircle, CheckCircle, Clock, ArrowLeft, Phone, Mail, CreditCard } from 'lucide-react'
+
+interface Cliente {
+    idCliente: number
+    nombre: string
+    telefono?: string
+    email?: string
+    rut?: string
+}
 
 interface Venta {
     idVenta: number
@@ -12,6 +20,12 @@ interface Venta {
     saldoPendiente: number
     fechaVencimientoPago?: string
     clienteId?: number
+    cliente?: Cliente  // Información completa del cliente (si viene del backend)
+    // Campos alternativos si el backend los incluye directamente en VentaEntity
+    clienteNombre?: string
+    clienteTelefono?: string
+    clienteEmail?: string
+    clienteRut?: string
     usuarioId: number
     fiado: boolean
     pagoCompletadoAt?: string
@@ -51,7 +65,31 @@ export default function FiadosPage() {
         try {
             setLoading(true)
             const res = await listarFiados(true) // Solo pendientes
-            setFiados(res || [])
+
+            // Si las ventas tienen clienteId pero no cliente, cargarlos
+            if (res && res.length > 0) {
+                const { obtenerClienteFiado } = await import('@/lib/clientesFiado')
+
+                const ventasConCliente = await Promise.all(
+                    res.map(async (venta: any) => {
+                        // Si tiene clienteId pero no tiene objeto cliente, cargarlo
+                        if (venta.clienteId && !venta.cliente) {
+                            try {
+                                const cliente = await obtenerClienteFiado(venta.clienteId)
+                                return { ...venta, cliente }
+                            } catch (err) {
+                                console.error(`Error al cargar cliente ${venta.clienteId}:`, err)
+                                return venta
+                            }
+                        }
+                        return venta
+                    })
+                )
+
+                setFiados(ventasConCliente || [])
+            } else {
+                setFiados(res || [])
+            }
         } catch (err: any) {
             showNotification('error', 'Error al cargar fiados: ' + err.message)
         } finally {
@@ -139,7 +177,7 @@ export default function FiadosPage() {
     const fiadosVencidos = fiados.filter(f => isVencido(f.fechaVencimientoPago))
 
     return (
-        <main className="min-h-screen bg-gray-50 p-4">
+        <main className="min-h-screen bg-[#F9F6F3] p-4">
             {/* Notification Toast */}
             {notification && (
                 <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in border-2 ${notification.type === 'success'
@@ -241,14 +279,14 @@ export default function FiadosPage() {
                                     return (
                                         <div
                                             key={venta.idVenta}
-                                            className={`border-2 rounded-lg p-4 transition-all ${vencido
+                                            className={`border-2 rounded-lg p-5 transition-all ${vencido
                                                 ? 'border-red-300 bg-red-50'
                                                 : 'border-gray-200 bg-white hover:border-orange-400 hover:bg-orange-50'
                                                 }`}
                                         >
-                                            <div className="flex items-start justify-between">
+                                            <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1">
-                                                    <div className="flex items-center gap-3 mb-2">
+                                                    <div className="flex items-center gap-3 mb-3">
                                                         <h3 className="text-lg font-bold text-gray-800">
                                                             Venta #{venta.idVenta}
                                                         </h3>
@@ -259,6 +297,41 @@ export default function FiadosPage() {
                                                         )}
                                                     </div>
 
+                                                    {/* Información del Cliente/Deudor */}
+                                                    <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <User className="w-5 h-5 text-blue-700" />
+                                                            <h4 className="text-sm font-bold text-blue-900">Información del Deudor</h4>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <User className="w-4 h-4 text-blue-600" />
+                                                                <span className="text-gray-700">
+                                                                    <strong>Nombre:</strong> {venta.cliente?.nombre || venta.clienteNombre || 'No Aplica'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <Phone className="w-4 h-4 text-blue-600" />
+                                                                <span className="text-gray-700">
+                                                                    <strong>Teléfono:</strong> {venta.cliente?.telefono || venta.clienteTelefono || 'No Aplica'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <Mail className="w-4 h-4 text-blue-600" />
+                                                                <span className="text-gray-700">
+                                                                    <strong>Email:</strong> {venta.cliente?.email || venta.clienteEmail || 'No Aplica'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <CreditCard className="w-4 h-4 text-blue-600" />
+                                                                <span className="text-gray-700">
+                                                                    <strong>RUT:</strong> {venta.cliente?.rut || venta.clienteRut || 'No Aplica'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Información de la Venta */}
                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                         <div>
                                                             <p className="text-gray-600">

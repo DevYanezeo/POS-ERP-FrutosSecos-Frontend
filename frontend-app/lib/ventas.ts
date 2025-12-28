@@ -6,13 +6,13 @@ function getAuthHeaders() {
   const token = hasWindow ? (globalThis as any).localStorage.getItem('token') : null
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  
+
   // Agregar token CSRF si existe (para Spring Boot)
   const csrfToken = hasWindow ? (globalThis as any).localStorage.getItem('csrf_token') : null
   if (csrfToken) {
     headers['X-XSRF-TOKEN'] = csrfToken
   }
-  
+
   return headers
 }
 
@@ -23,7 +23,7 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
     headers: { ...(init?.headers as any), ...defaultHeaders },
   }
   const method = (mergedInit.method || 'GET').toUpperCase()
-  try { console.log(`[API] ${method} ${input}`) } catch {}
+  try { console.log(`[API] ${method} ${input}`) } catch { }
   // if there's a JSON body, log a short preview (helpful for POST/PUT debugging)
   try {
     if (mergedInit.body) {
@@ -82,14 +82,84 @@ export async function eliminarVenta(id: number) {
   return true
 }
 
+// ==================== GESTIÓN DE FIADOS ====================
+
+/**
+ * Listar todos los fiados, opcionalmente solo los pendientes
+ * Endpoint: GET /api/fiados?pendientesOnly=true
+ */
 export async function listarFiados(pendientesOnly: boolean = true) {
-  return fetchWithAuth(`${API_BASE}/api/ventas/fiados?pendientesOnly=${pendientesOnly}`)
+  return fetchWithAuth(`${API_BASE}/api/fiados?pendientesOnly=${pendientesOnly}`)
 }
 
+/**
+ * Obtener un fiado específico por su ID
+ * Endpoint: GET /api/fiados/{id}
+ */
+export async function obtenerFiado(id: number) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/${id}`)
+}
+
+/**
+ * Marcar una venta como fiado
+ * Endpoint: POST /api/fiados/{id}/marcar
+ */
+export async function marcarComoFiado(id: number, fiadoData: any) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/${id}/marcar`, {
+    method: 'POST',
+    body: JSON.stringify(fiadoData),
+  })
+}
+
+/**
+ * Actualizar los datos de un fiado
+ * Endpoint: PATCH /api/fiados/{id}
+ */
+export async function actualizarFiado(id: number, fiadoData: any) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(fiadoData),
+  })
+}
+
+/**
+ * Cancelar un fiado
+ * Endpoint: DELETE /api/fiados/{id}
+ */
+export async function cancelarFiado(id: number) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Listar clientes que tienen fiados, opcionalmente solo los con saldos pendientes
+ * Endpoint: GET /api/fiados/clientes?pendientesOnly=true
+ */
+export async function listarClientesConFiado(pendientesOnly: boolean = true) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/clientes?pendientesOnly=${pendientesOnly}`)
+}
+
+/**
+ * Listar fiados de un cliente específico
+ * Endpoint: GET /api/fiados/clientes/{clienteId}/fiados?pendientesOnly=true
+ */
+export async function listarFiadosPorCliente(clienteId: number, pendientesOnly: boolean = true) {
+  return fetchWithAuth(`${API_BASE}/api/fiados/clientes/${clienteId}/fiados?pendientesOnly=${pendientesOnly}`)
+}
+
+/**
+ * Obtener historial de pagos de una venta
+ * Endpoint: GET /api/ventas/{ventaId}/pagos
+ */
 export async function obtenerPagos(ventaId: number) {
   return fetchWithAuth(`${API_BASE}/api/ventas/${ventaId}/pagos`)
 }
 
+/**
+ * Registrar un pago para una venta (parcial o total)
+ * Endpoint: POST /api/ventas/{ventaId}/pagos
+ */
 export async function registrarPago(ventaId: number, pagoRequest: any) {
   return fetchWithAuth(`${API_BASE}/api/ventas/${ventaId}/pagos`, {
     method: 'POST',
@@ -103,6 +173,12 @@ export default {
   confirmarVenta,
   eliminarVenta,
   listarFiados,
+  obtenerFiado,
+  marcarComoFiado,
+  actualizarFiado,
+  cancelarFiado,
+  listarClientesConFiado,
+  listarFiadosPorCliente,
   obtenerPagos,
   registrarPago,
 }
