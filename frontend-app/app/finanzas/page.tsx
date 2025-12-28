@@ -155,8 +155,8 @@ export default function FinanzasPage() {
         { name: 'Utilidad', value: data.resumenFinanciero?.utilidadNeta || 0 },
     ]
 
-    const totalGastos = (data.resumenFinanciero?.totalCostoProductos || 0) + (data.resumenFinanciero?.gastosOperacionales || 0)
-    const totalGastosPrev = (prevData?.resumenFinanciero?.totalCostoProductos || 0) + (prevData?.resumenFinanciero?.gastosOperacionales || 0)
+    const totalGastos = (data.resumenFinanciero?.totalCostoProductos || 0) + (data.resumenFinanciero?.gastosAdquisicion || 0) + (data.resumenFinanciero?.gastosOperacionales || 0)
+    const totalGastosPrev = (prevData?.resumenFinanciero?.totalCostoProductos || 0) + (prevData?.resumenFinanciero?.gastosAdquisicion || 0) + (prevData?.resumenFinanciero?.gastosOperacionales || 0)
 
     // Helper to calculate trend
     const calculateTrend = (current: number, previous: number) => {
