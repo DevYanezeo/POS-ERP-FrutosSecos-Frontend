@@ -30,7 +30,7 @@ export async function buildLabelsHtml(lotes: any[], product: any) {
           <div class="meta">
             <div class="product">${escapeHtml(product?.nombre ?? product?.name ?? '')}</div>
             <div class="lote">${escapeHtml(code)}</div>
-            <div class="info">Cant: ${Number(l.cantidad || 0)} | Venc: ${escapeHtml(l.fechaVencimiento || l.fecha_vencimiento || '-')}</div>
+            <div class="info">${escapeHtml(product?.unidad ?? '-')} | Venc: ${escapeHtml(l.fechaVencimiento || l.fecha_vencimiento || '-')}</div>
           </div>
           <div class="barcode">${svgStr}</div>
         </div>
