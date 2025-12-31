@@ -149,8 +149,9 @@ export default function FinanzasPage() {
     }
 
     // Prepare chart data (Mock or derived from actual data if available)
+    const totalIngresosConIngresos = (data.resumenFinanciero?.totalIngresos || 0) + (data.resumenFinanciero?.ingresosAdicionales || 0)
     const chartData = [
-        { name: 'Ingresos', value: data.resumenFinanciero?.totalIngresos || 0 },
+        { name: 'Ingresos', value: totalIngresosConIngresos },
         { name: 'Gastos', value: (data.resumenFinanciero?.totalCostoProductos || 0) + (data.resumenFinanciero?.gastosOperacionales || 0) },
         { name: 'Utilidad', value: data.resumenFinanciero?.utilidadNeta || 0 },
     ]
@@ -203,7 +204,7 @@ export default function FinanzasPage() {
                             className="px-5 py-2.5 bg-[#A0522D] text-white rounded-lg font-bold hover:bg-[#8B4513] transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
                         >
                             <DollarSign className="w-4 h-4" />
-                            Gestionar Gastos
+                            Gastos e Ingresos
                         </button>
                     </div>
                 </div>
@@ -212,11 +213,11 @@ export default function FinanzasPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard
                         title="Ingresos Totales"
-                        value={`$${(data.resumenFinanciero?.totalIngresos || 0).toLocaleString()}`}
+                        value={`$${totalIngresosConIngresos.toLocaleString()}`}
                         icon={DollarSign}
                         variant="success"
                         trend={incomeTrend ? { value: incomeTrend.value, label: "vs periodo anterior", positive: incomeTrend.positive } : undefined}
-                        tooltip="Dinero total recibido por ventas en caja."
+                        tooltip="Dinero total: ventas en caja + ingresos adicionales registrados."
                     />
                     <StatCard
                         title="Gastos"

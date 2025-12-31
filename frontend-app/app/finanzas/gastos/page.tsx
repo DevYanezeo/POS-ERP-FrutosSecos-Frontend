@@ -59,14 +59,14 @@ export default function GastosPage() {
                             <ArrowLeft className="w-5 h-5 mr-2" />
                             Volver
                         </Button>
-                        <h1 className="text-3xl font-bold text-[#2E2A26]">Gestión de Gastos</h1>
+                        <h1 className="text-3xl font-bold text-[#2E2A26]">Gestión de Gastos e Ingresos</h1>
                     </div>
                     <Button
                         onClick={() => setIsModalOpen(true)}
                         className="bg-[#A0522D] hover:bg-[#8B4513] text-white"
                     >
                         <Plus className="w-5 h-5 mr-2" />
-                        Nuevo Gasto
+                        Nuevo Registro
                     </Button>
                 </div>
 
@@ -89,7 +89,7 @@ export default function GastosPage() {
                 {/* Tabla */}
                 <div className="bg-white rounded-xl shadow-sm border border-[#F5EDE4] overflow-hidden">
                     <div className="p-6 border-b border-[#F5EDE4]">
-                        <h2 className="text-xl font-bold text-[#2E2A26]">Historial de Gastos</h2>
+                        <h2 className="text-xl font-bold text-[#2E2A26]">Historial de Gastos e Ingresos</h2>
                     </div>
 
                     {loading ? (
@@ -125,15 +125,16 @@ export default function GastosPage() {
                                                 {gasto.descripcion}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${gasto.tipo === 'OPERACIONAL' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                        gasto.tipo === 'ADQUISICION' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                            'bg-gray-50 text-gray-700 border-gray-100'
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${gasto.tipo === 'INGRESO' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                        gasto.tipo === 'OPERACIONAL' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                            gasto.tipo === 'ADQUISICION' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                                'bg-gray-50 text-gray-700 border-gray-100'
                                                     }`}>
                                                     {gasto.tipo}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-red-600">
-                                                ${gasto.monto.toLocaleString()}
+                                            <td className={`px-6 py-4 text-right font-bold ${gasto.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {gasto.tipo === 'INGRESO' ? '+' : '-'}${gasto.monto.toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <button

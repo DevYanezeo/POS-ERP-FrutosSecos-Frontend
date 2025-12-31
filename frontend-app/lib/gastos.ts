@@ -15,7 +15,7 @@ export interface Gasto {
     descripcion: string;
     monto: number;
     fecha: string; // ISO Date
-    tipo: 'OPERACIONAL' | 'ADQUISICION' | 'OTROS';
+    tipo: 'OPERACIONAL' | 'ADQUISICION' | 'OTROS' | 'INGRESO';
     usuario?: any;
     producto?: any;
 }

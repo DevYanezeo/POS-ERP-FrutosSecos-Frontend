@@ -138,6 +138,17 @@ export interface FinanceSummary {
     margenPorcentaje: number
 }
 
+export interface DashboardSummary {
+    ventasHoy: number
+    porcentajeVentasAyer: number
+    productosVendidos: number
+    productosUnicos: number
+    ventaPromedio: number
+    transaccionesHoy: number
+    stockTotal: number
+    alertasStock: number
+}
+
 // ==================== HELPERS ====================
 
 /**
@@ -473,10 +484,12 @@ export async function exportarReporteExcel(periodo: 'mes' | 'anio', fecha: Date 
     a.remove()
 }
 
-/**
- * Obtiene las ventas totales de cada día de la semana actual (Lun-Dom).
- * Retorna un arreglo de 7 números (índice 0 = Lunes, 6 = Domingo).
- */
+export async function obtenerResumenDashboard(): Promise<DashboardSummary> {
+    const url = `${API_BASE}/api/dashboard/summary`
+    const data = await fetchWithAuth(url)
+    return data
+}
+
 export async function getVentasSemanaActual(): Promise<number[]> {
     const url = `${API_BASE}/api/reportes/ventas/semana-actual`
     const data = await fetchWithAuth(url)
@@ -490,6 +503,7 @@ export default {
     obtenerMargenGanancias,
     obtenerProductosVencidos,
     obtenerTodosLosReportes,
-    obtenerResumenFinanciero
+    obtenerResumenFinanciero,
+    obtenerResumenDashboard
 }
 

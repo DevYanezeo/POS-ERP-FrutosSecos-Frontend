@@ -60,7 +60,7 @@ export default function CreateGastoModal({ isOpen, onClose, onSuccess }: CreateG
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Registrar Nuevo Gasto</DialogTitle>
+                    <DialogTitle>Registrar Gasto o Ingreso</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -86,7 +86,7 @@ export default function CreateGastoModal({ isOpen, onClose, onSuccess }: CreateG
                         />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="tipo">Tipo de Gasto</Label>
+                        <Label htmlFor="tipo">Tipo</Label>
                         <Select
                             value={formData.tipo}
                             onValueChange={(val) => setFormData({ ...formData, tipo: val })}
@@ -95,6 +95,7 @@ export default function CreateGastoModal({ isOpen, onClose, onSuccess }: CreateG
                                 <SelectValue placeholder="Seleccione tipo" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="INGRESO">Ingreso</SelectItem>
                                 <SelectItem value="OPERACIONAL">Operacional</SelectItem>
                                 <SelectItem value="ADQUISICION">Adquisición</SelectItem>
                                 <SelectItem value="OTROS">Otros</SelectItem>
@@ -115,7 +116,7 @@ export default function CreateGastoModal({ isOpen, onClose, onSuccess }: CreateG
                         <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
                         <Button type="submit" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Guardar Gasto
+                            Guardar
                         </Button>
                     </DialogFooter>
                 </form>

@@ -4,14 +4,27 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { API_BASE } from '@/lib/api'
 import { Calendar, ChevronLeft, ChevronRight, Eye, DollarSign, CreditCard, Banknote } from 'lucide-react'
+import DevolucionModal from './components/DevolucionModal'
+
+interface DetalleVenta {
+  id: number
+  idDetalleVenta?: number  // ID del detalle para devoluciones
+  productoId: number
+  productoNombre: string
+  productoUnidad?: string
+  codigoLote?: string
+  cantidad: number
+  precioUnitario: number
+  subtotal: number
+}
 
 interface Venta {
-  id: number
+  idVenta: number
   fecha: string
   total: number
   metodoPago: 'EFECTIVO' | 'DEBITO' | 'TRANSFERENCIA'
   usuarioId: number
-  detalles?: any[]
+  detalles?: DetalleVenta[]
 }
 
 interface VentasPorDia {
@@ -32,6 +45,14 @@ export default function HistorialVentasPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [detailVentas, setDetailVentas] = useState<Venta[]>([])
   const [showDetailModal, setShowDetailModal] = useState(false)
+
+  // Estados para el modal de detalle individual de una venta
+  const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null)
+  const [showVentaDetailModal, setShowVentaDetailModal] = useState(false)
+
+  // Estados para el modal de devolución
+  const [showDevolucionModal, setShowDevolucionModal] = useState(false)
+  const [loadingVentaDetail, setLoadingVentaDetail] = useState(false)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -146,8 +167,39 @@ export default function HistorialVentasPage() {
   }
 
   async function handleViewVentaDetail(ventaId: number) {
-    // Aquí podrías navegar a una página de detalle completo o mostrar un modal
-    console.log('Ver detalle de venta:', ventaId)
+    try {
+      setLoadingVentaDetail(true)
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No hay token de autenticación')
+        return
+      }
+
+      const response = await fetch(`${API_BASE}/api/ventas/${ventaId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al cargar detalle de venta')
+      }
+
+      const ventaCompleta: Venta = await response.json()
+      setSelectedVenta(ventaCompleta)
+      setShowVentaDetailModal(true)
+    } catch (error: any) {
+      console.error('Error al obtener detalle de venta:', error.message)
+      alert('No se pudo cargar el detalle de la venta')
+    } finally {
+      setLoadingVentaDetail(false)
+    }
+  }
+
+  function closeVentaDetailModal() {
+    setShowVentaDetailModal(false)
+    setSelectedVenta(null)
   }
 
   const daysInMonth = getDaysInMonth()
@@ -363,7 +415,7 @@ export default function HistorialVentasPage() {
               <div className="space-y-3">
                 {detailVentas.map((venta, index) => (
                   <div
-                    key={venta.id}
+                    key={venta.idVenta}
                     className="border border-[#F5EDE4] rounded-lg p-3 hover:border-[#A0522D] hover:bg-[#FBF7F4] transition-all"
                   >
                     <div className="flex items-center justify-between">
@@ -371,7 +423,7 @@ export default function HistorialVentasPage() {
                         <div className="flex items-center gap-3">
                           <span className="text-xl font-bold text-[#2E2A26]">#{index + 1}</span>
                           <div>
-                            <p className="text-sm text-[#7A6F66]">ID Venta: {venta.id}</p>
+                            <p className="text-sm text-[#7A6F66]">ID Venta: {venta.idVenta}</p>
                             <p className="text-xs text-[#9C9288]">
                               {new Date(venta.fecha).toLocaleString('es-CL')}
                             </p>
@@ -390,7 +442,7 @@ export default function HistorialVentasPage() {
                         </div>
 
                         <button
-                          onClick={() => handleViewVentaDetail(venta.id)}
+                          onClick={() => handleViewVentaDetail(venta.idVenta)}
                           className="px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white font-medium rounded-lg transition-colors flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
@@ -447,6 +499,147 @@ export default function HistorialVentasPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de detalle individual de una venta */}
+      {/* Modal de detalle individual de una venta */}
+      {showVentaDetailModal && selectedVenta && (
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+            {/* Header del modal */}
+            <div className="bg-[#2E2A26] text-white p-6 border-b border-[#4A443E]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">Detalle de Venta #{selectedVenta.idVenta}</h3>
+                  <p className="text-[#E5DDD4] mt-1">
+                    {new Date(selectedVenta.fecha).toLocaleString('es-CL', {
+                      dateStyle: 'full',
+                      timeStyle: 'short'
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={closeVentaDetailModal}
+                  className="w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-colors text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Información general de la venta */}
+            <div className="bg-[#FBF7F4] p-4 border-b border-[#F5EDE4]">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-3 border border-[#F5EDE4]">
+                  <p className="text-xs text-[#7A6F66] font-semibold mb-1">Método de Pago</p>
+                  <p className="text-lg font-bold text-[#2E2A26]">{selectedVenta.metodoPago}</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-[#F5EDE4]">
+                  <p className="text-xs text-[#7A6F66] font-semibold mb-1">Total de la Venta</p>
+                  <p className="text-2xl font-bold text-[#A0522D]">${selectedVenta.total.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de productos */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+              <h4 className="text-lg font-bold text-[#2E2A26] mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#A0522D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Productos Vendidos
+              </h4>
+
+              {selectedVenta.detalles && selectedVenta.detalles.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Header de tabla */}
+                  <div className="grid grid-cols-12 gap-2 bg-[#2E2A26] text-white text-sm font-bold p-3 rounded-lg">
+                    <div className="col-span-5">Producto</div>
+                    <div className="col-span-2 text-center">Cantidad</div>
+                    <div className="col-span-2 text-right">Precio Unit.</div>
+                    <div className="col-span-3 text-right">Subtotal</div>
+                  </div>
+
+                  {/* Filas de productos */}
+                  {selectedVenta.detalles.map((detalle, index) => (
+                    <div
+                      key={detalle.id || index}
+                      className="grid grid-cols-12 gap-2 bg-[#FBF7F4] border border-[#F5EDE4] hover:border-[#A0522D] p-3 rounded-lg transition-all"
+                    >
+                      <div className="col-span-5 font-semibold text-[#2E2A26]">
+                        {detalle.codigoLote && (
+                          <span className="text-xs font-normal text-[#A0522D] mr-2">[{detalle.codigoLote}]</span>
+                        )}
+                        {detalle.productoNombre || 'Producto sin nombre'}
+                        {detalle.productoUnidad && (
+                          <span className="text-sm text-[#7A6F66] ml-2">({detalle.productoUnidad})</span>
+                        )}
+                      </div>
+                      <div className="col-span-2 text-center font-bold text-[#A0522D]">
+                        {detalle.cantidad}
+                      </div>
+                      <div className="col-span-2 text-right text-[#7A6F66]">
+                        ${detalle.precioUnitario?.toLocaleString() || '0'}
+                      </div>
+                      <div className="col-span-3 text-right font-bold text-[#2E2A26]">
+                        ${detalle.subtotal?.toLocaleString() || '0'}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Total */}
+                  <div className="grid grid-cols-12 gap-2 bg-[#2E2A26] text-white p-4 rounded-lg mt-4">
+                    <div className="col-span-9 text-right font-bold text-lg">
+                      TOTAL:
+                    </div>
+                    <div className="col-span-3 text-right font-bold text-2xl">
+                      ${selectedVenta.total.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-[#FBF7F4] rounded-lg border border-[#F5EDE4]">
+                  <p className="text-[#7A6F66]">No hay productos en esta venta</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer del modal */}
+            <div className="bg-[#F9F6F3] px-6 py-4 border-t border-[#F5EDE4] flex justify-between items-center">
+              <button
+                onClick={() => setShowDevolucionModal(true)}
+                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Procesar Devolución
+              </button>
+              <button
+                onClick={closeVentaDetailModal}
+                className="px-6 py-2 bg-[#7A6F66] hover:bg-[#5D544D] text-white font-semibold rounded-lg transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Devolución */}
+      {selectedVenta && (
+        <DevolucionModal
+          isOpen={showDevolucionModal}
+          onClose={() => setShowDevolucionModal(false)}
+          venta={selectedVenta}
+          onSuccess={() => {
+            setShowDevolucionModal(false)
+            setShowVentaDetailModal(false)
+            fetchVentasDelMes() // Recargar ventas después de la devolución
+          }}
+        />
       )}
     </main>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle, Calendar, ArrowRight } from "lucide-react"
-import { obtenerRankingProductos, ProductoVendido, getVentasSemanaActual } from "@/lib/finanzas"
+import { obtenerRankingProductos, ProductoVendido, getVentasSemanaActual, obtenerResumenDashboard, DashboardSummary } from "@/lib/finanzas"
 import { getProductosStockBajo } from "@/lib/productos"
 import { getStockMinimo, getAlertasStock } from "@/lib/config"
 
@@ -16,6 +16,8 @@ export default function DashboardPage() {
   const [loadingStock, setLoadingStock] = useState(true)
   const [weeklySales, setWeeklySales] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
   const [loadingWeeklySales, setLoadingWeeklySales] = useState(true)
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -23,6 +25,21 @@ export default function DashboardPage() {
     const storedName = localStorage.getItem("user_nombre")
     setUserName(storedName)
   }, [router])
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoadingSummary(true)
+        const summary = await obtenerResumenDashboard()
+        setDashboardSummary(summary || null)
+      } catch (error) {
+        console.error("Error loading dashboard summary:", error)
+      } finally {
+        setLoadingSummary(false)
+      }
+    }
+    loadData()
+  }, [])
 
   useEffect(() => {
     const cargarTopProductos = async () => {
@@ -118,12 +135,20 @@ export default function DashboardPage() {
               <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-lg group-hover:scale-110 transition-transform duration-300">
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>
-              <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">
-                +18%
+              <div className={`text-xs px-2 py-1 rounded-full font-medium ${(dashboardSummary?.porcentajeVentasAyer || 0) >= 0
+                  ? 'text-green-600 bg-green-50'
+                  : 'text-red-600 bg-red-50'
+                }`}>
+                {loadingSummary
+                  ? '...'
+                  : `${(dashboardSummary?.porcentajeVentasAyer || 0) > 0 ? '+' : ''}${(dashboardSummary?.porcentajeVentasAyer || 0).toFixed(1)}%`
+                }
               </div>
             </div>
             <div className="text-sm text-[#7A6F66] font-medium mb-1">Ventas de Hoy</div>
-            <div className="text-2xl font-bold text-[#2E2A26]">$125,840</div>
+            <div className="text-2xl font-bold text-[#2E2A26]">
+              {loadingSummary ? '...' : `$${(dashboardSummary?.ventasHoy || 0).toLocaleString()}`}
+            </div>
             <div className="text-xs text-[#9C9288] mt-2">vs ayer</div>
           </div>
 
@@ -135,8 +160,12 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-sm text-[#7A6F66] font-medium mb-1">Productos Vendidos</div>
-            <div className="text-2xl font-bold text-[#2E2A26]">47</div>
-            <div className="text-xs text-[#9C9288] mt-2">12 productos únicos</div>
+            <div className="text-2xl font-bold text-[#2E2A26]">
+              {loadingSummary ? '...' : (dashboardSummary?.productosVendidos || 0)}
+            </div>
+            <div className="text-xs text-[#9C9288] mt-2">
+              {loadingSummary ? '...' : `${dashboardSummary?.productosUnicos || 0} productos únicos`}
+            </div>
           </div>
 
           {/* Venta Promedio */}
@@ -147,8 +176,12 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-sm text-[#7A6F66] font-medium mb-1">Venta Promedio</div>
-            <div className="text-2xl font-bold text-[#2E2A26]">$8,950</div>
-            <div className="text-xs text-[#9C9288] mt-2">14 transacciones</div>
+            <div className="text-2xl font-bold text-[#2E2A26]">
+              {loadingSummary ? '...' : `$${(dashboardSummary?.ventaPromedio || 0).toLocaleString()}`}
+            </div>
+            <div className="text-xs text-[#9C9288] mt-2">
+              {loadingSummary ? '...' : `${dashboardSummary?.transaccionesHoy || 0} transacciones`}
+            </div>
           </div>
 
           {/* Stock Total */}
@@ -159,11 +192,13 @@ export default function DashboardPage() {
               </div>
               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                {bajoStock.length}
+                {loadingSummary ? '...' : (dashboardSummary?.alertasStock || 0)}
               </div>
             </div>
             <div className="text-sm text-[#7A6F66] font-medium mb-1">Stock Total</div>
-            <div className="text-2xl font-bold text-[#2E2A26]">1,247</div>
+            <div className="text-2xl font-bold text-[#2E2A26]">
+              {loadingSummary ? '...' : (dashboardSummary?.stockTotal || 0).toLocaleString()}
+            </div>
             <div className="text-xs text-[#9C9288] mt-2">unidades totales</div>
           </div>
         </div>
