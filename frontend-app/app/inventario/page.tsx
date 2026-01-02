@@ -203,9 +203,13 @@ export default function InventarioPage() {
     }
     setAdding(true)
     try {
+      // Encontrar el categoriaId basado en el nombre seleccionado
+      const categoriaObj = categorias.find(c => c.nombre === categoria)
+      const categoriaId = categoriaObj?.idCategoria || null
+      
       await saveProducto({
         nombre,
-        categoria,
+        categoriaId,
         precio: Number(precio || 0),
         unidad,
         stock: 0
@@ -644,7 +648,7 @@ export default function InventarioPage() {
               <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
                 <option value="">Seleccionar categoría</option>
                 {categorias.map(cat => (
-                  <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre}</option>
+                  <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre || '-'}</option>
                 ))}
               </select>
             </div>

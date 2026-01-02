@@ -93,8 +93,8 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
                             <div className="text-center text-sm text-gray-500 py-4">No hay categorías registradas.</div>
                         ) : (
                             categorias.map((cat, idx) => (
-                                <div key={cat.id || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm">
-                                    <span className="font-medium text-gray-700">{cat.nombre}</span>
+                                <div key={cat.idCategoria || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm">
+                                    <span className="font-medium text-gray-700">{cat.nombre || '-'}</span>
                                     {/* Future: Delete button could go here */}
                                 </div>
                             ))
