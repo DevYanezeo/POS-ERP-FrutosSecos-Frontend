@@ -132,12 +132,10 @@ export default function VentasPage() {
       // Pasar un objeto de producto enriquecido con stock del lote
       const productoParaCarrito = { ...p, stock: stockDesdeLote }
       addToCart(productoParaCarrito, loteId)
-      showNotification('success', `${p.nombre || 'Producto'} agregado al carrito`)
       return
     }
     // Caso estándar: producto directo
     addToCart(scanned, null)
-    showNotification('success', `${scanned?.nombre || 'Producto'} agregado al carrito`)
   }
 
   function handleScanError(message: string) {
