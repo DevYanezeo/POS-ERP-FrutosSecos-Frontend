@@ -239,6 +239,19 @@ export async function createCategoria(categoria: { nombre: string }) {
   })
 }
 
+export async function updateCategoria(id: number, categoria: { nombre: string }) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(categoria),
+  })
+}
+
+export async function deleteCategoria(id: number) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 
 
 
