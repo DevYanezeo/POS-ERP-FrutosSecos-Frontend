@@ -135,9 +135,11 @@ export default function Navbar() {
                 Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
-            <div className="text-base font-bold">
-              {userName || "Invitado"}
-            </div>
+            {userName && (
+              <div className="text-base font-bold">
+                {userName}
+              </div>
+            )}
           </DropdownMenu>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes, updateCostoLote } from "@/lib/lotes"
+import { getCategorias } from "@/lib/productos"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import {
   Dialog,
@@ -54,6 +55,8 @@ export default function EditProductDialog({
   const [editUnidad, setEditUnidad] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
   const [editEstado, setEditEstado] = useState(true)
+  const [editCategoria, setEditCategoria] = useState<number | null>(null)
+  const [categorias, setCategorias] = useState<any[]>([])
   const [processing, setProcessing] = useState(false)
   const [lotes, setLotes] = useState<any[]>([])
   const [loadingLotes, setLoadingLotes] = useState(false)
@@ -77,6 +80,19 @@ export default function EditProductDialog({
       setEditUnidad(product.unidad || '')
       setEditDescripcion(product.descripcion || '')
       setEditEstado(product.estado !== false)
+      setEditCategoria(product.categoriaId ?? null)
+      
+      // Cargar categorías
+      const fetchCategorias = async () => {
+        try {
+          const cats = await getCategorias()
+          setCategorias(cats || [])
+        } catch (e) {
+          console.error('Error cargando categorías:', e)
+        }
+      }
+      fetchCategorias()
+      
       const fetchLotes = async () => {
         setLoadingLotes(true)
         try {
@@ -260,6 +276,10 @@ export default function EditProductDialog({
       if (editPrecio !== '') {
         payload.precio = parseInt(String(editPrecio), 10)
       }
+      
+      if (editCategoria !== null) {
+        payload.categoriaId = editCategoria
+      }
 
       // Evitar PUT si no hay cambios en los campos del producto
       const original = {
@@ -268,6 +288,7 @@ export default function EditProductDialog({
         unidad: product?.unidad || '',
         estado: product?.estado !== false,
         precio: product?.precio ?? undefined,
+        categoriaId: product?.categoriaId ?? null,
       }
       const computed = { ...payload }
       if (computed.precio === undefined) delete (computed as any).precio
@@ -276,7 +297,8 @@ export default function EditProductDialog({
         original.descripcion !== computed.descripcion ||
         original.unidad !== computed.unidad ||
         original.estado !== computed.estado ||
-        (computed.precio !== undefined && original.precio !== computed.precio)
+        (computed.precio !== undefined && original.precio !== computed.precio) ||
+        original.categoriaId !== computed.categoriaId
       )
       if (!hasChanges) {
         setProcessing(false)
@@ -330,6 +352,22 @@ export default function EditProductDialog({
                     className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
                     placeholder="Nombre del producto"
                   />
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Categoría</label>
+                  <select
+                    value={editCategoria ?? ''}
+                    onChange={(e) => setEditCategoria(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                  >
+                    <option value="">Sin categoría</option>
+                    {categorias.map(cat => (
+                      <option key={cat.idCategoria} value={cat.idCategoria}>
+                        {cat.nombre || '-'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

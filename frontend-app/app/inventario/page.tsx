@@ -201,6 +201,10 @@ export default function InventarioPage() {
       toast({ title: 'Nombre requerido', description: 'Debe especificar un nombre para el producto', variant: 'destructive' })
       return
     }
+    if (!categoria) {
+      toast({ title: 'Categoría requerida', description: 'Debe seleccionar una categoría para el producto', variant: 'destructive' })
+      return
+    }
     setAdding(true)
     try {
       // Encontrar el categoriaId basado en el nombre seleccionado
