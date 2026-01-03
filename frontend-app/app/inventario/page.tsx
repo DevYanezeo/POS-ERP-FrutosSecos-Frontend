@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
+import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List, Trash2Icon, Trash } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
 import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
@@ -55,6 +55,7 @@ export default function InventarioPage() {
   const [categoria, setCategoria] = useState("")
   const [precio, setPrecio] = useState<number | ''>('')
   const [unidad, setUnidad] = useState("")
+  const [unidadType, setUnidadType] = useState("gr")
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
 
@@ -201,7 +202,7 @@ export default function InventarioPage() {
         nombre,
         categoriaId,
         precio: Number(precio || 0),
-        unidad,
+        unidad: `${unidad.replace(/[^0-9]/g, '')}${unidadType}`,
         stock: 0
       })
 
@@ -209,6 +210,7 @@ export default function InventarioPage() {
       setCategoria('')
       setPrecio('')
       setUnidad('')
+      setUnidadType('gr')
       setStockVal('')
 
       setShowAddForm(false)
@@ -648,18 +650,25 @@ export default function InventarioPage() {
             </div>
             <div>
               <label className="text-sm text-[#7A6F66] mb-1 block">Presentación</label>
-              <div className="flex items-center gap-0 border rounded overflow-hidden">
+              <div className="flex items-center gap-0 border rounded overflow-hidden h-[42px]">
                 <input
                   type="number"
-                  value={unidad.replace(/[^0-9]/g, '')}
-                  onChange={(e) => {
-                    const num = e.target.value.replace(/[^0-9]/g, '')
-                    setUnidad(num ? `${num}gr` : '')
-                  }}
+                  value={unidad}
+                  onChange={(e) => setUnidad(e.target.value)}
                   placeholder="250"
-                  className="w-full px-3 py-2 border-0 outline-none"
+                  className="w-full px-3 py-2 border-0 outline-none h-full"
                 />
-                <span className="px-3 py-2 bg-[#F5EDE4] text-[#7A6F66] font-medium whitespace-nowrap">gr</span>
+                <select
+                  value={unidadType}
+                  onChange={(e) => setUnidadType(e.target.value)}
+                  className="px-2 py-2 bg-[#F5EDE4] text-[#7A6F66] font-medium border-l border-[#F5EDE4] outline-none cursor-pointer hover:bg-[#E5DDD4] h-full transition-colors"
+                >
+                  <option value="gr">gr</option>
+                  <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="lt">lt</option>
+                  <option value="un">un</option>
+                </select>
               </div>
             </div>
           </div>
@@ -814,54 +823,52 @@ export default function InventarioPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="p-5 pt-0 border-t border-[#F5EDE4]/50">
+                    <div className="p-5 pt-0">
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 items-center">
                         <button
                           onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando detalle', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Ver detalles"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                           Ver
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Editar producto"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                           Editar
                         </button>
 
-                        <div className="w-full flex justify-center">
-                          <PrintButton productRaw={product.raw} />
-                        </div>
+                        <PrintButton productRaw={product.raw} />
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Agregar stock"
                         >
-                          <PlusCircle className="w-4 h-4" />
+                          <PlusCircle className="w-3.5 h-3.5" />
                           Stock
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-amber-100 hover:bg-amber-200 text-amber-700 hover:text-amber-800 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Quitar stock"
                         >
-                          <MinusCircle className="w-4 h-4" />
+                          <MinusCircle className="w-3.5 h-3.5" />
                           Stock
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="px-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          className="w-full h-8 px-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Eliminar producto"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           Eliminar
                         </button>
                       </div>

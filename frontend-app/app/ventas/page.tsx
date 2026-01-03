@@ -56,13 +56,46 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
       <div class="tot"><div style="display:flex;justify-content:space-between">SUBTOTAL<span>${subtotal.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
       <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
-      <script>window.onload=function(){setTimeout(()=>window.print(),200)}</script></body></html>`
+      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
+      </body></html>`
 
-    const w = window.open('', '_blank', 'width=420,height=800')
-    if (!w) { console.warn('No se pudo abrir ventana de impresión'); return }
-    w.document.open()
-    w.document.write(html)
-    w.document.close()
+    // Use iframe for "silent" print (no new window pop-up)
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.visibility = 'hidden'
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentWindow?.document
+    if (!doc) {
+      console.error('No se pudo acceder al documento del iframe')
+      return
+    }
+
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    // Wait for content (images/fonts) to be ready effectively, then print
+    const win = iframe.contentWindow
+    if (win) {
+      win.focus()
+      setTimeout(() => {
+        try {
+          win.print()
+        } catch (e) {
+          console.error('Error al imprimir iframe', e)
+        }
+        // Cleanup after a delay to allow print dialog to finish/open
+        setTimeout(() => {
+          try { document.body.removeChild(iframe) } catch { }
+        }, 1000)
+      }, 500)
+    }
   } catch (e) { console.error('Error generando boleta', e) }
 }
 

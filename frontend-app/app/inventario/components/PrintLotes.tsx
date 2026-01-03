@@ -4,7 +4,7 @@
 export async function buildLabelsHtml(lotes: any[], product: any) {
   // Builds and returns the printable HTML as a string. Does not open windows.
   try {
-  if (!lotes || lotes.length === 0) return ''
+    if (!lotes || lotes.length === 0) return ''
     const mod = await import('jsbarcode')
     const JsBarcode = mod.default || mod
 
@@ -44,23 +44,35 @@ export async function buildLabelsHtml(lotes: any[], product: any) {
           <meta charset="utf-8" />
           <title>Etiquetas - ${escapeHtml(product?.nombre ?? '')}</title>
           <style>
-            @media print { @page { margin: 6mm } }
-            body { font-family: Arial, Helvetica, sans-serif; padding: 6mm }
-            .labels { display: flex; flex-wrap: wrap; gap: 6mm }
-            .label { width: 70mm; height: 25mm; box-sizing: border-box; border: 1px solid #eee; padding: 6px; display:flex; flex-direction:column; justify-content:space-between }
-            .meta { font-size: 12px; color: #222 }
-            .product { font-weight:600; margin-bottom:4px }
-            .lote { font-size: 13px; margin-bottom:2px }
-            .info { font-size: 11px; color:#666 }
-            .barcode { width:100%; height: auto }
-            svg { width:100%; height: auto }
+            @media print { @page { margin: 0mm; size: auto; } }
+            body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; width: 100%; height: 100%; }
+            .label { 
+              width: 100%; 
+              height: 100vh; 
+              box-sizing: border-box; 
+              border: 1px solid #eee; 
+              padding: 6px; 
+              display: flex; 
+              flex-direction: column; 
+              justify-content: flex-start; /* Changed from space-between to group content */
+              gap: 4mm;
+              page-break-after: always;
+              overflow: hidden;
+            }
+            .label:last-child { page-break-after: auto; }
+            .meta { font-size: 12px; color: #222; text-align: left; }
+            .product { font-weight: 600; margin-bottom: 4px; font-size: 16px; } /* Slightly larger product name */
+            .lote { font-size: 13px; margin-bottom: 2px; }
+            .info { font-size: 11px; color: #666; }
+            .barcode { width: 100%; height: auto; display: flex; justify-content: center; margin-top: auto; margin-bottom: auto; } /* Center barcode in remaining space? No, just let it flow */
+            .barcode { width: 100%; height: auto; display: flex; justify-content: center; }
+            svg { width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
           </style>
         </head>
         <body>
           <div class="labels">
             ${labels.join('\n')}
           </div>
-          <script>setTimeout(()=>window.print(), 300)</script>
         </body>
       </html>
     `

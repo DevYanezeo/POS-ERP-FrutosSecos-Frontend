@@ -53,6 +53,7 @@ export default function EditProductDialog({
   const [editNombre, setEditNombre] = useState('')
   const [editPrecio, setEditPrecio] = useState<number | ''>(0)
   const [editUnidad, setEditUnidad] = useState('')
+  const [editUnidadType, setEditUnidadType] = useState('gr')
   const [editDescripcion, setEditDescripcion] = useState('')
   const [editEstado, setEditEstado] = useState(true)
   const [editCategoria, setEditCategoria] = useState<number | null>(null)
@@ -77,7 +78,19 @@ export default function EditProductDialog({
     if (product && open) {
       setEditNombre(product.nombre || '')
       setEditPrecio(product.precio ?? 0)
-      setEditUnidad(product.unidad || '')
+
+      // Parse unidad (e.g. "500gr" -> "500" + "gr")
+      const rawUnidad = product.unidad || ''
+      const match = rawUnidad.match(/^(\d+)\s*([a-zA-Z]+)$/)
+      if (match) {
+        setEditUnidad(match[1])
+        setEditUnidadType(match[2].toLowerCase())
+      } else {
+        // Fallback: try to just get numbers, default to gr if strict number
+        const nums = rawUnidad.replace(/[^0-9]/g, '')
+        setEditUnidad(nums)
+        setEditUnidadType('gr')
+      }
       setEditDescripcion(product.descripcion || '')
       setEditEstado(product.estado !== false)
       setEditCategoria(product.categoriaId ?? null)
@@ -268,7 +281,7 @@ export default function EditProductDialog({
       const payload: any = {
         nombre: editNombre,
         descripcion: editDescripcion,
-        unidad: editUnidad,
+        unidad: `${editUnidad}${editUnidadType}`,
         estado: editEstado,
         lotes: existingLotes
       }
@@ -386,19 +399,25 @@ export default function EditProductDialog({
                   </div>
                   <div>
                     <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Presentación</label>
-                    <div className="flex items-center gap-0 border rounded overflow-hidden focus-within:border-[#A0522D]">
+                    <div className="flex items-center gap-0 border rounded overflow-hidden h-[34px]">
                       <input
                         type="number"
-                        value={editUnidad.replace(/[^0-9]/g, '')}
-                        onChange={(e) => {
-                          // Solo guardar números + 'gr'
-                          const num = e.target.value.replace(/[^0-9]/g, '')
-                          setEditUnidad(num ? `${num}gr` : '')
-                        }}
+                        value={editUnidad}
+                        onChange={(e) => setEditUnidad(e.target.value)}
                         placeholder="250"
-                        className="w-full px-2 py-1.5 border-0 outline-none text-sm"
+                        className="w-full px-2 py-1.5 border-0 outline-none text-sm h-full"
                       />
-                      <span className="px-2 py-1.5 bg-[#F5EDE4] text-[#7A6F66] font-medium text-sm whitespace-nowrap">gr</span>
+                      <select
+                        value={editUnidadType}
+                        onChange={(e) => setEditUnidadType(e.target.value)}
+                        className="px-2 py-1.5 bg-[#F5EDE4] text-[#7A6F66] font-medium text-sm border-l border-[#F5EDE4] outline-none cursor-pointer hover:bg-[#E5DDD4] h-full transition-colors"
+                      >
+                        <option value="gr">gr</option>
+                        <option value="kg">kg</option>
+                        <option value="ml">ml</option>
+                        <option value="lt">lt</option>
+                        <option value="un">un</option>
+                      </select>
                     </div>
                   </div>
                 </div>

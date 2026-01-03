@@ -14,6 +14,17 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 export default function ManageCategoriesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const [categorias, setCategorias] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
@@ -23,6 +34,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
     const [editingName, setEditingName] = useState("")
     const [updating, setUpdating] = useState(false)
     const [deleting, setDeleting] = useState<number | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
     const fetchCategorias = async () => {
         setLoading(true)
@@ -87,12 +99,15 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
         }
     }
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar esta categoría?')) return
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id)
+    }
 
-        setDeleting(id)
+    const executeDelete = async () => {
+        if (!confirmDeleteId) return
+        setDeleting(confirmDeleteId)
         try {
-            await deleteCategoria(id)
+            await deleteCategoria(confirmDeleteId)
             toast({ title: 'Categoría eliminada', description: 'La categoría se ha eliminado correctamente.', variant: 'success' })
             fetchCategorias()
         } catch (e: any) {
@@ -100,6 +115,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
             toast({ title: 'Error', description: 'No se pudo eliminar la categoría.', variant: 'destructive' })
         } finally {
             setDeleting(null)
+            setConfirmDeleteId(null)
         }
     }
 
@@ -199,6 +215,23 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
+
+            <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Estás a punto de eliminar esta categoría. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={executeDelete} className="bg-red-600 hover:bg-red-700">
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     )
 }
