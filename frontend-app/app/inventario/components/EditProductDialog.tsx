@@ -81,7 +81,7 @@ export default function EditProductDialog({
       setEditDescripcion(product.descripcion || '')
       setEditEstado(product.estado !== false)
       setEditCategoria(product.categoriaId ?? null)
-      
+
       // Cargar categorías
       const fetchCategorias = async () => {
         try {
@@ -92,7 +92,7 @@ export default function EditProductDialog({
         }
       }
       fetchCategorias()
-      
+
       const fetchLotes = async () => {
         setLoadingLotes(true)
         try {
@@ -276,7 +276,7 @@ export default function EditProductDialog({
       if (editPrecio !== '') {
         payload.precio = parseInt(String(editPrecio), 10)
       }
-      
+
       if (editCategoria !== null) {
         payload.categoriaId = editCategoria
       }
@@ -306,7 +306,7 @@ export default function EditProductDialog({
         return
       }
 
-      console.log('EditProductDialog - Payload:', payload)
+      console.log('EditProductDialog - Payload to send:', JSON.stringify(payload, null, 2))
       await onUpdate(id, payload)
       onSuccess()
       onOpenChange(false)
@@ -323,6 +323,9 @@ export default function EditProductDialog({
       setProcessing(false)
     }
   }
+
+  console.log('EditProductDialog - Render - Categorias:', categorias)
+  console.log('EditProductDialog - Render - EditCategoria ID:', editCategoria)
 
   return (
     <>

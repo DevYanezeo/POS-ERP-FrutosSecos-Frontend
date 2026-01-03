@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -148,27 +148,13 @@ export default function InventarioPage() {
     }
   }
 
-  // safeUpdateProducto: obtiene el producto actual desde la API, mezcla los cambios
-  // y llama a updateProducto para evitar sobrescribir campos no enviados (ej. stock)
+  // safeUpdateProducto: llama a updateProducto (PUT) que ahora maneja la actualización segura en backend
   const safeUpdateProducto = async (id: number, changes: any) => {
     try {
-      // obtener estado actual del producto
-      const current = await getProductoById(id)
-      // construir DTO parcial solo con campos del producto editados
-      const parcialDto: any = {}
-      if (typeof changes?.nombre !== 'undefined') parcialDto.nombre = changes.nombre
-      if (typeof changes?.descripcion !== 'undefined') parcialDto.descripcion = changes.descripcion
-      if (typeof changes?.unidad !== 'undefined') parcialDto.unidad = changes.unidad
-      if (typeof changes?.estado !== 'undefined') parcialDto.estado = changes.estado
-      if (typeof changes?.precio !== 'undefined') parcialDto.precio = changes.precio
-
-      // evitar enviar lotes por PATCH; backend preserva relaciones
-      // console.log('ParcialDTO:', parcialDto)
-
-      // si no hay cambios, salir sin llamar al endpoint
-      if (Object.keys(parcialDto).length === 0) return
-
-      await updateProductoParcial(id, parcialDto)
+      // El backend ya maneja la lógica de ignorar lotes y campos nulos si es necesario,
+      // y EditProductDialog envía un payload completo con categoriaId
+      console.log('safeUpdateProducto - Enviando update completo:', changes)
+      await updateProducto(id, changes)
     } catch (e: any) {
       throw e
     }
@@ -210,7 +196,7 @@ export default function InventarioPage() {
       // Encontrar el categoriaId basado en el nombre seleccionado
       const categoriaObj = categorias.find(c => c.nombre === categoria)
       const categoriaId = categoriaObj?.idCategoria || null
-      
+
       await saveProducto({
         nombre,
         categoriaId,
