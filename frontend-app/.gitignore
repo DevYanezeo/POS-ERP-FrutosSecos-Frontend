@@ -25,3 +25,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# testing
+/coverage
+/test-reports
+/playwright-report
+/test-results
+*.lcov
+.nyc_output
