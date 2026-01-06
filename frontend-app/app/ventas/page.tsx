@@ -19,12 +19,12 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
   try {
     const subtotal = cart.reduce((s, it) => s + (Number(it.precioUnitario) * Number(it.cantidad)), 0)
     const logoUrl = '/logo.png'
-    const title = 'RESUMEN DE COMPRA - DETALLE DE VENTA'
-    const footerNote = `Documento no válido como venta`
+    const title = 'COMPROBANTE DE PRODUCTOS'
+    const footerNote = `Documento no válido como boleta`
 
     const rows = (cart || []).map((it: any) => `
       <tr>
-        <td style="padding:6px 0">${it.nombre || it.name}</td>
+        <td style="padding:6px 0">${it.nombre || it.name} ${it.unidad || ''}</td>
         <td style="text-align:center">${it.cantidad}</td>
         <td style="text-align:right">${Number(it.precioUnitario || it.price).toLocaleString()}</td>
         <td style="text-align:right">${(Number(it.precioUnitario || it.price) * Number(it.cantidad)).toLocaleString()}</td>
@@ -34,10 +34,9 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <style>
-        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:10px;color:#222}
-        /* increased width so columns can separate */
-        .receipt{width:420px;margin:0 auto}
-        .logo{width:90px;margin:0 auto;display:block}
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:5px;color:#222}
+        .receipt{width:100%;margin:0 auto}
+        .logo{width:90px;max-width:100%;margin:0 auto;display:block}
         h1{font-size:14px;text-align:center;margin:8px 0}
         table{width:100%;font-size:13px;border-collapse:collapse}
         td{padding:6px 4px;vertical-align:top}
@@ -53,10 +52,10 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         .note{color:#a00;font-weight:600;font-size:11px}
       </style>
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
+      ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
       <div class="tot"><div style="display:flex;justify-content:space-between">SUBTOTAL<span>${subtotal.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
-      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
-      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
+      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p></div></div>
       </body></html>`
 
     // Use iframe for "silent" print (no new window pop-up)
@@ -208,6 +207,7 @@ export default function VentasPage() {
         nombre: producto?.nombre ?? producto?.titulo ?? 'Producto',
         cantidad: 1,
         precioUnitario: producto?.precio ?? producto?.precioUnitario ?? 0,
+        unidad: producto?.unidad || '',
         idLote: loteId,
         stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
       }]
@@ -483,9 +483,9 @@ export default function VentasPage() {
 
     try {
       const res = await confirmarVenta(payload)
-      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
+      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.idVenta || '---'}`)
       // Generate and trigger boleta print immediately
-      try { generarBoletaVenta(cart, res?.id) } catch (e) { console.error('Error al generar boleta', e) }
+      try { generarBoletaVenta(cart, res?.idVenta) } catch (e) { console.error('Error al generar boleta', e) }
       setCart([])
 
       // Opcional: redirigir o mostrar recibo
