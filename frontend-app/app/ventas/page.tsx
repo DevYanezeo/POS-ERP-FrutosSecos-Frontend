@@ -34,9 +34,9 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <style>
-        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:5px;color:#222}
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:5px;color:#000}
         .receipt{width:100%;margin:0 auto}
-        .logo{width:90px;max-width:100%;margin:0 auto;display:block}
+        .logo{width:90px;max-width:100%;margin:0 auto;display:block;filter:grayscale(100%)}
         h1{font-size:14px;text-align:center;margin:8px 0}
         table{width:100%;font-size:13px;border-collapse:collapse}
         td{padding:6px 4px;vertical-align:top}
@@ -47,9 +47,9 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         td:nth-child(3){width:15%;text-align:right}
         td:nth-child(4){width:15%;text-align:right}
         .right{text-align:right}
-        .tot{border-top:1px dashed #ccc;margin-top:10px;padding-top:10px;font-weight:700}
-        .footer{font-size:10px;color:#555;margin-top:10px}
-        .note{color:#a00;font-weight:600;font-size:11px}
+        .tot{border-top:1px dashed #000;margin-top:10px;padding-top:10px;font-weight:700}
+        .footer{font-size:10px;color:#000;margin-top:10px}
+        .note{color:#000;font-weight:600;font-size:11px}
       </style>
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
       ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
