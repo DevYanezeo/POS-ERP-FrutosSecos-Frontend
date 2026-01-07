@@ -65,6 +65,23 @@ export default function HistorialVentasPage() {
     return `${day}/${month}/${year}`
   }
 
+  function formatChileanDateTime(fechaString: string): string {
+    const date = new Date(fechaString)
+  
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    }
+    
+    return date.toLocaleString('es-CL', options)
+  }
+
   useEffect(() => {
     fetchVentasDelMes()
   }, [currentDate])
@@ -425,7 +442,7 @@ export default function HistorialVentasPage() {
                           <div>
                             <p className="text-sm text-[#7A6F66]">ID Venta: {venta.idVenta}</p>
                             <p className="text-xs text-[#9C9288]">
-                              {new Date(venta.fecha).toLocaleString('es-CL')}
+                              {formatChileanDateTime(venta.fecha)}
                             </p>
                           </div>
                         </div>
@@ -512,10 +529,7 @@ export default function HistorialVentasPage() {
                 <div>
                   <h3 className="text-2xl font-bold">Detalle de Venta #{selectedVenta.idVenta}</h3>
                   <p className="text-[#E5DDD4] mt-1">
-                    {new Date(selectedVenta.fecha).toLocaleString('es-CL', {
-                      dateStyle: 'full',
-                      timeStyle: 'short'
-                    })}
+                    {formatChileanDateTime(selectedVenta.fecha)}
                   </p>
                 </div>
                 <button
