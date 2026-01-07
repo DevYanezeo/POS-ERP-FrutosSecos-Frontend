@@ -58,24 +58,15 @@ export default function DeleteProductDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="bg-[#FEF2F2] p-4 rounded border border-[#FCA5A5]">
-            <div className="flex gap-3">
-              <div className="w-16 h-16 bg-[#F3F2F1] rounded overflow-hidden flex-shrink-0">
-                <img 
-                  src={product?.imagen || '/imagenes-productos/Almendras Orgánica.png'} 
-                  alt="" 
-                  className="w-full h-full object-cover" 
-                />
+            <div>
+              <div className="font-semibold text-[#2E2A26]">
+                {product?.nombre || product?.name}
               </div>
-              <div>
-                <div className="font-semibold text-[#2E2A26]">
-                  {product?.nombre || product?.name}
-                </div>
-                <div className="text-sm text-[#7A6F66]">
-                  Stock: {product?.stock ?? 0} unidades
-                </div>
-                <div className="text-sm text-[#A0522D]">
-                  CLP ${product?.precio?.toLocaleString() ?? 0}
-                </div>
+              <div className="text-sm text-[#7A6F66]">
+                Stock: {product?.stock ?? 0} unidades
+              </div>
+              <div className="text-sm text-[#A0522D]">
+                CLP ${product?.precio?.toLocaleString() ?? 0}
               </div>
             </div>
           </div>

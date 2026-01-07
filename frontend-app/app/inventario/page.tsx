@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
+import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List, Trash2Icon, Trash } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProductoParcial, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
+import { getProductos, getProductosConCategoria, buscarProductos, deleteProducto, saveProducto, getProductoById, updateProducto, agregarStock, quitarStock, getCategorias } from "../../lib/productos"
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,7 @@ export default function InventarioPage() {
   const [categoria, setCategoria] = useState("")
   const [precio, setPrecio] = useState<number | ''>('')
   const [unidad, setUnidad] = useState("")
+  const [unidadType, setUnidadType] = useState("gr")
   const [stockVal, setStockVal] = useState<number | ''>('')
   const [adding, setAdding] = useState(false)
 
@@ -99,13 +100,48 @@ export default function InventarioPage() {
     }
   })
 
+  // Enhanced fetchProductos to use backend filters/sort
   const fetchProductos = async () => {
     setLoading(true)
     setProductosError(null)
     try {
-      const data = await getProductosConCategoria()
+      let data: any[] = [];
+
+      // Priority 1: Search (Backend)
+      if (search) {
+        data = await buscarProductos(search) || []
+      }
+      // Priority 2: Category Filter (Backend)
+      else if (filterCategoria) {
+        // Find ID for the name
+        const catObj = categorias.find(c => c.nombre === filterCategoria)
+        if (catObj) {
+          data = await import("../../lib/productos").then(m => m.getProductosByCategoria(catObj.idCategoria)) || []
+        } else {
+          // If category name match fails, fallback to local
+          data = await getProductosConCategoria() || []
+        }
+      }
+      // Priority 3: Price Filter (Backend)
+      else if (filterPrecioMin !== '' && filterPrecioMax !== '') {
+        const min = Number(filterPrecioMin)
+        const max = Number(filterPrecioMax)
+        data = await import("../../lib/productos").then(m => m.getProductosByPrecio(min, max)) || []
+      }
+      // Priority 4: Sorting (Backend) - REMOVED per user request to use Client-Side sorting
+      else {
+        // Default: Fetch all and sort client-side
+        data = await getProductosConCategoria() || []
+      }
+
       setRawData(data || [])
+
+      // Even if we fetched from backend, we might need to apply 'residual' client-side logical
+      // e.g. if we fetched by Category, we might still want to Sort client-side because 
+      // the backend endpoint for category doesn't accept sort params.
+      // So we call applyClientSideSort to finish the job.
       applyFiltersAndSort(data || [])
+
     } catch (e: any) {
       setProductosError(e?.message || 'Error cargando productos')
     } finally {
@@ -113,34 +149,19 @@ export default function InventarioPage() {
     }
   }
 
-  // safeUpdateProducto: obtiene el producto actual desde la API, mezcla los cambios
-  // y llama a updateProducto para evitar sobrescribir campos no enviados (ej. stock)
+  // safeUpdateProducto: llama a updateProducto (PUT) que ahora maneja la actualización segura en backend
   const safeUpdateProducto = async (id: number, changes: any) => {
     try {
-      // obtener estado actual del producto
-      const current = await getProductoById(id)
-      // construir DTO parcial solo con campos del producto editados
-      const parcialDto: any = {}
-      if (typeof changes?.nombre !== 'undefined') parcialDto.nombre = changes.nombre
-      if (typeof changes?.descripcion !== 'undefined') parcialDto.descripcion = changes.descripcion
-      if (typeof changes?.unidad !== 'undefined') parcialDto.unidad = changes.unidad
-      if (typeof changes?.estado !== 'undefined') parcialDto.estado = changes.estado
-      if (typeof changes?.precio !== 'undefined') parcialDto.precio = changes.precio
-
-      // evitar enviar lotes por PATCH; backend preserva relaciones
-      console.log('ParcialDTO:', parcialDto)
-
-      // si no hay cambios, salir sin llamar al endpoint
-      if (Object.keys(parcialDto).length === 0) return
-
-      await updateProductoParcial(id, parcialDto)
+      // El backend ya maneja la lógica de ignorar lotes y campos nulos si es necesario,
+      // y EditProductDialog envía un payload completo con categoriaId
+      console.log('safeUpdateProducto - Enviando update completo:', changes)
+      await updateProducto(id, changes)
     } catch (e: any) {
       throw e
     }
   }
 
   useEffect(() => {
-    fetchProductos()
     const loadCategorias = async () => {
       try {
         const data = await getCategorias()
@@ -167,13 +188,21 @@ export default function InventarioPage() {
       toast({ title: 'Nombre requerido', description: 'Debe especificar un nombre para el producto', variant: 'destructive' })
       return
     }
+    if (!categoria) {
+      toast({ title: 'Categoría requerida', description: 'Debe seleccionar una categoría para el producto', variant: 'destructive' })
+      return
+    }
     setAdding(true)
     try {
+      // Encontrar el categoriaId basado en el nombre seleccionado
+      const categoriaObj = categorias.find(c => c.nombre === categoria)
+      const categoriaId = categoriaObj?.idCategoria || null
+
       await saveProducto({
         nombre,
-        categoria,
+        categoriaId,
         precio: Number(precio || 0),
-        unidad,
+        unidad: `${unidad.replace(/[^0-9]/g, '')}${unidadType}`,
         stock: 0
       })
 
@@ -181,6 +210,7 @@ export default function InventarioPage() {
       setCategoria('')
       setPrecio('')
       setUnidad('')
+      setUnidadType('gr')
       setStockVal('')
 
       setShowAddForm(false)
@@ -212,21 +242,39 @@ export default function InventarioPage() {
     })()
   }, [searchParams])
 
-  // Helpers: filter + sort pipeline over rawData
+  // Pure Client-Side Logic (Sort & Residual Filter)
+  // We rename the old 'applyFiltersAndSort' to this, and remove the heavy filtering 
+  // that is now done by backend (though keeping it doesn't hurt for safety).
+  // Helper to extract category string safely
   const getCategoriaString = (p: any) => p?.nombreCategoria || p?.categoria || (p?.categoriaId ? `ID:${p.categoriaId}` : '-')
-  const applyFiltersAndSort = (source?: any[]) => {
-    const base = Array.isArray(source) ? source : rawData
-    let list = [...base]
 
-    // Filters
-    if (filterCategoria) {
-      list = list.filter(p => String(getCategoriaString(p)).toLowerCase() === String(filterCategoria).toLowerCase())
-    }
+  // Pure Client-Side Logic (Sort & Residual Filter)
+  // We rename the old 'applyFiltersAndSort' to this, and remove the heavy filtering 
+  // that is now done by backend (though keeping it doesn't hurt for safety).
+  const applyFiltersAndSort = (source: any[] = rawData) => {
+    let list = [...source]
+
+    // We still keep these in case the backend returned a broader set, 
+    // or if we are in a mode where we fetched 'All' and want to filter client-side 
+    // (e.g. Unit filter isn't in backend).
+
+    // Filter by Unit (Client-side only for now as no backend endpoint)
     if (filterUnidad) {
       const q = String(filterUnidad).toLowerCase()
       list = list.filter(p => String(p?.unidad || '').toLowerCase().includes(q))
     }
-    if (filterPrecioMin !== '' || filterPrecioMax !== '') {
+
+    // Secondary Filters (if not already filtered by backend)
+    // E.g. if we fetched by Category, but user ALSO set Price range, 
+    // we filter here because we couldn't send both to backend.
+    if (filterCategoria && !search) {
+      // Already fetched by category, no-op
+    }
+
+    if ((filterPrecioMin !== '' || filterPrecioMax !== '') && !search && !filterCategoria) {
+      // Already fetched by price, no-op
+    } else if (filterPrecioMin !== '' || filterPrecioMax !== '') {
+      // Only apply if we didn't use the main backend price filter
       const min = filterPrecioMin === '' ? Number.NEGATIVE_INFINITY : Number(filterPrecioMin)
       const max = filterPrecioMax === '' ? Number.POSITIVE_INFINITY : Number(filterPrecioMax)
       list = list.filter(p => {
@@ -235,7 +283,11 @@ export default function InventarioPage() {
       })
     }
 
-    // Sorting
+    // Client-Side Sorting
+    // If we used a backend sort endpoint, the list is already sorted.
+    // But if we used a Filter endpoint (e.g. By Category), the result is unsorted.
+    // So we apply sort here to be safe and consistent.
+    // (Sorting an already sorted list is O(n), so it's fine).
     list.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       const av = (() => {
@@ -264,27 +316,30 @@ export default function InventarioPage() {
 
     const mapped = mapProductos(list)
     setProductos(mapped)
-    // initialize group order if not present (keep stable across filter/sort re-applies)
+
     try {
       const groups = groupProductsByName(mapped).map((g: any) => g.name)
-      if (!groupOrder) {
-        // try load from localStorage first
-        const saved = typeof window !== 'undefined' ? window.localStorage.getItem('inventario_group_order') : null
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed)) setGroupOrder(parsed)
-          else setGroupOrder(groups)
-        } else {
-          setGroupOrder(groups)
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
+      setGroupOrder(groups)
+    } catch (e) { }
   }
 
-  // Re-apply when filters/sort change
-  useEffect(() => { applyFiltersAndSort() }, [sortBy, sortDir, filterCategoria, filterUnidad, filterPrecioMin, filterPrecioMax])
+  // Trigger fetch when filters that affect BACKEND query change
+  // Note: 'filterUnidad' is client-side only so it triggers local re-render, 
+  // but 'filterCategoria' triggers a fetch.
+  // We separate the effects.
+
+  // 1. Fetch triggers
+  useEffect(() => {
+    // Debounce or just call fetch
+    fetchProductos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterCategoria, filterPrecioMin, filterPrecioMax, sortBy, sortDir, search])
+
+  // 2. Local triggers (Unit filter)
+  useEffect(() => {
+    applyFiltersAndSort(rawData)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterUnidad])
 
   // Persist groupOrder to localStorage when updated
   useEffect(() => {
@@ -585,7 +640,7 @@ export default function InventarioPage() {
               <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full px-3 py-2 border rounded">
                 <option value="">Seleccionar categoría</option>
                 {categorias.map(cat => (
-                  <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre}</option>
+                  <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre || '-'}</option>
                 ))}
               </select>
             </div>
@@ -595,18 +650,25 @@ export default function InventarioPage() {
             </div>
             <div>
               <label className="text-sm text-[#7A6F66] mb-1 block">Presentación</label>
-              <div className="flex items-center gap-0 border rounded overflow-hidden">
+              <div className="flex items-center gap-0 border rounded overflow-hidden h-[42px]">
                 <input
                   type="number"
-                  value={unidad.replace(/[^0-9]/g, '')}
-                  onChange={(e) => {
-                    const num = e.target.value.replace(/[^0-9]/g, '')
-                    setUnidad(num ? `${num}gr` : '')
-                  }}
+                  value={unidad}
+                  onChange={(e) => setUnidad(e.target.value)}
                   placeholder="250"
-                  className="w-full px-3 py-2 border-0 outline-none"
+                  className="w-full px-3 py-2 border-0 outline-none h-full"
                 />
-                <span className="px-3 py-2 bg-[#F5EDE4] text-[#7A6F66] font-medium whitespace-nowrap">gr</span>
+                <select
+                  value={unidadType}
+                  onChange={(e) => setUnidadType(e.target.value)}
+                  className="px-2 py-2 bg-[#F5EDE4] text-[#7A6F66] font-medium border-l border-[#F5EDE4] outline-none cursor-pointer hover:bg-[#E5DDD4] h-full transition-colors"
+                >
+                  <option value="gr">gr</option>
+                  <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="lt">lt</option>
+                  <option value="un">un</option>
+                </select>
               </div>
             </div>
           </div>
@@ -761,54 +823,52 @@ export default function InventarioPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="p-5 pt-0 border-t border-[#F5EDE4]/50">
+                    <div className="p-5 pt-0">
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 items-center">
                         <button
                           onClick={async () => { try { const id = product.raw?.idProducto || product.id; const detalle = await getProductoById(id); setSelectedProduct(detalle); setShowDetail(true) } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando detalle', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] text-[#7A6F66] hover:text-[#2E2A26] rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Ver detalles"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                           Ver
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowEditDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-[#A0522D] hover:bg-[#8B5E3C] text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Editar producto"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                           Editar
                         </button>
 
-                        <div className="w-full flex justify-center">
-                          <PrintButton productRaw={product.raw} />
-                        </div>
+                        <PrintButton productRaw={product.raw} />
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowAddStockDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Agregar stock"
                         >
-                          <PlusCircle className="w-4 h-4" />
+                          <PlusCircle className="w-3.5 h-3.5" />
                           Stock
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowRemoveStockDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="w-full px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-200 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-8 px-2 bg-amber-100 hover:bg-amber-200 text-amber-700 hover:text-amber-800 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Quitar stock"
                         >
-                          <MinusCircle className="w-4 h-4" />
+                          <MinusCircle className="w-3.5 h-3.5" />
                           Stock
                         </button>
 
                         <button
                           onClick={async () => { try { const detalle = await getProductoById(product.raw?.idProducto || product.id); setSelectedProduct(detalle); setShowDeleteDialog(true); } catch (e: any) { toast({ title: 'Error', description: e?.message || 'Error cargando producto', variant: 'destructive' }) } }}
-                          className="px-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 rounded-md text-xs font-medium transition-colors flex items-center gap-2"
+                          className="w-full h-8 px-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                           title="Eliminar producto"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           Eliminar
                         </button>
                       </div>

@@ -207,6 +207,27 @@ export async function quitarStock(idProducto: number, idLote: number, cantidad: 
   })
 }
 
+// ====================== NUEVOS MÉTODOS FILTROS & ORDEN (BACKEND) ======================
+
+export async function getProductosByPrecio(min: number, max: number) {
+  return fetchWithAuth(`${API_BASE}/api/productos/precio?min=${min}&max=${max}`)
+}
+
+export async function getProductosSortedByName(asc: boolean = true) {
+  const endpoint = asc ? 'orden/nombre' : 'orden/nombre-desc'
+  return fetchWithAuth(`${API_BASE}/api/productos/${endpoint}`)
+}
+
+export async function getProductosSortedByStock(asc: boolean = true) {
+  const endpoint = asc ? 'orden/stock-asc' : 'orden/stock-desc'
+  return fetchWithAuth(`${API_BASE}/api/productos/${endpoint}`)
+}
+
+export async function getProductosSortedByPrice(asc: boolean = true) {
+  const endpoint = asc ? 'orden/precio-asc' : 'orden/precio-desc'
+  return fetchWithAuth(`${API_BASE}/api/productos/${endpoint}`)
+}
+
 export async function getCategorias() {
   return fetchWithAuth(`${API_BASE}/api/categorias`)
 }
@@ -215,6 +236,19 @@ export async function createCategoria(categoria: { nombre: string }) {
   return fetchWithAuth(`${API_BASE}/api/categorias/crear`, {
     method: 'POST',
     body: JSON.stringify(categoria),
+  })
+}
+
+export async function updateCategoria(id: number, categoria: { nombre: string }) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(categoria),
+  })
+}
+
+export async function deleteCategoria(id: number) {
+  return fetchWithAuth(`${API_BASE}/api/categorias/${id}`, {
+    method: 'DELETE',
   })
 }
 

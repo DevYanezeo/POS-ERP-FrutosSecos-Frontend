@@ -19,12 +19,12 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
   try {
     const subtotal = cart.reduce((s, it) => s + (Number(it.precioUnitario) * Number(it.cantidad)), 0)
     const logoUrl = '/logo.png'
-    const title = 'RESUMEN DE COMPRA - DETALLE DE VENTA'
-    const footerNote = `Documento no válido como venta`
+    const title = 'COMPROBANTE DE PRODUCTOS'
+    const footerNote = `Documento no válido como boleta`
 
     const rows = (cart || []).map((it: any) => `
       <tr>
-        <td style="padding:6px 0">${it.nombre || it.name}</td>
+        <td style="padding:6px 0">${it.nombre || it.name} ${it.unidad || ''}</td>
         <td style="text-align:center">${it.cantidad}</td>
         <td style="text-align:right">${Number(it.precioUnitario || it.price).toLocaleString()}</td>
         <td style="text-align:right">${(Number(it.precioUnitario || it.price) * Number(it.cantidad)).toLocaleString()}</td>
@@ -34,10 +34,9 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <style>
-        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:10px;color:#222}
-        /* increased width so columns can separate */
-        .receipt{width:420px;margin:0 auto}
-        .logo{width:90px;margin:0 auto;display:block}
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:5px;color:#000}
+        .receipt{width:100%;margin:0 auto}
+        .logo{width:90px;max-width:100%;margin:0 auto;display:block;filter:grayscale(100%)}
         h1{font-size:14px;text-align:center;margin:8px 0}
         table{width:100%;font-size:13px;border-collapse:collapse}
         td{padding:6px 4px;vertical-align:top}
@@ -48,21 +47,54 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         td:nth-child(3){width:15%;text-align:right}
         td:nth-child(4){width:15%;text-align:right}
         .right{text-align:right}
-        .tot{border-top:1px dashed #ccc;margin-top:10px;padding-top:10px;font-weight:700}
-        .footer{font-size:10px;color:#555;margin-top:10px}
-        .note{color:#a00;font-weight:600;font-size:11px}
+        .tot{border-top:1px dashed #000;margin-top:10px;padding-top:10px;font-weight:700}
+        .footer{font-size:10px;color:#000;margin-top:10px}
+        .note{color:#000;font-weight:600;font-size:11px}
       </style>
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
+      ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
-      <div class="tot"><div style="display:flex;justify-content:space-between">SUBTOTAL<span>${subtotal.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
-      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p>${saleId ? `<p>ID venta: ${saleId}</p>` : ''}</div></div>
-      <script>window.onload=function(){setTimeout(()=>window.print(),200)}</script></body></html>`
+      <div class="tot"><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
+      <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p></div></div>
+      </body></html>`
 
-    const w = window.open('', '_blank', 'width=420,height=800')
-    if (!w) { console.warn('No se pudo abrir ventana de impresión'); return }
-    w.document.open()
-    w.document.write(html)
-    w.document.close()
+    // Use iframe for "silent" print (no new window pop-up)
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.visibility = 'hidden'
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentWindow?.document
+    if (!doc) {
+      console.error('No se pudo acceder al documento del iframe')
+      return
+    }
+
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    // Wait for content (images/fonts) to be ready effectively, then print
+    const win = iframe.contentWindow
+    if (win) {
+      win.focus()
+      setTimeout(() => {
+        try {
+          win.print()
+        } catch (e) {
+          console.error('Error al imprimir iframe', e)
+        }
+        // Cleanup after a delay to allow print dialog to finish/open
+        setTimeout(() => {
+          try { document.body.removeChild(iframe) } catch { }
+        }, 1000)
+      }, 500)
+    }
   } catch (e) { console.error('Error generando boleta', e) }
 }
 
@@ -132,12 +164,10 @@ export default function VentasPage() {
       // Pasar un objeto de producto enriquecido con stock del lote
       const productoParaCarrito = { ...p, stock: stockDesdeLote }
       addToCart(productoParaCarrito, loteId)
-      showNotification('success', `${p.nombre || 'Producto'} agregado al carrito`)
       return
     }
     // Caso estándar: producto directo
     addToCart(scanned, null)
-    showNotification('success', `${scanned?.nombre || 'Producto'} agregado al carrito`)
   }
 
   function handleScanError(message: string) {
@@ -177,6 +207,7 @@ export default function VentasPage() {
         nombre: producto?.nombre ?? producto?.titulo ?? 'Producto',
         cantidad: 1,
         precioUnitario: producto?.precio ?? producto?.precioUnitario ?? 0,
+        unidad: producto?.unidad || '',
         idLote: loteId,
         stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
       }]
@@ -452,9 +483,9 @@ export default function VentasPage() {
 
     try {
       const res = await confirmarVenta(payload)
-      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.id || '---'}`)
+      showNotification('success', `Venta confirmada exitosamente. ID: ${res?.idVenta || '---'}`)
       // Generate and trigger boleta print immediately
-      try { generarBoletaVenta(cart, res?.id) } catch (e) { console.error('Error al generar boleta', e) }
+      try { generarBoletaVenta(cart, res?.idVenta) } catch (e) { console.error('Error al generar boleta', e) }
       setCart([])
 
       // Opcional: redirigir o mostrar recibo

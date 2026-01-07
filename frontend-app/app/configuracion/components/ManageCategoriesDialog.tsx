@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getCategorias, createCategoria } from "@/lib/productos"
-import { Plus, Trash2, Tag } from "lucide-react"
+import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from "@/lib/productos"
+import { Plus, Trash2, Tag, Edit2, X } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -14,11 +14,27 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 export default function ManageCategoriesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const [categorias, setCategorias] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState("")
     const [creating, setCreating] = useState(false)
+    const [editingId, setEditingId] = useState<number | null>(null)
+    const [editingName, setEditingName] = useState("")
+    const [updating, setUpdating] = useState(false)
+    const [deleting, setDeleting] = useState<number | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
     const fetchCategorias = async () => {
         setLoading(true)
@@ -52,6 +68,54 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
             toast({ title: 'Error', description: 'No se pudo crear la categoría.', variant: 'destructive' })
         } finally {
             setCreating(false)
+        }
+    }
+
+    const handleStartEdit = (cat: any) => {
+        setEditingId(cat.idCategoria)
+        setEditingName(cat.nombre)
+    }
+
+    const handleCancelEdit = () => {
+        setEditingId(null)
+        setEditingName("")
+    }
+
+    const handleUpdate = async () => {
+        if (!editingName.trim() || !editingId) return
+
+        setUpdating(true)
+        try {
+            await updateCategoria(editingId, { nombre: editingName })
+            toast({ title: 'Categoría actualizada', description: 'La categoría se ha actualizado correctamente.', variant: 'success' })
+            setEditingId(null)
+            setEditingName("")
+            fetchCategorias()
+        } catch (e: any) {
+            console.error(e)
+            toast({ title: 'Error', description: 'No se pudo actualizar la categoría.', variant: 'destructive' })
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id)
+    }
+
+    const executeDelete = async () => {
+        if (!confirmDeleteId) return
+        setDeleting(confirmDeleteId)
+        try {
+            await deleteCategoria(confirmDeleteId)
+            toast({ title: 'Categoría eliminada', description: 'La categoría se ha eliminado correctamente.', variant: 'success' })
+            fetchCategorias()
+        } catch (e: any) {
+            console.error(e)
+            toast({ title: 'Error', description: 'No se pudo eliminar la categoría.', variant: 'destructive' })
+        } finally {
+            setDeleting(null)
+            setConfirmDeleteId(null)
         }
     }
 
@@ -93,9 +157,52 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
                             <div className="text-center text-sm text-gray-500 py-4">No hay categorías registradas.</div>
                         ) : (
                             categorias.map((cat, idx) => (
-                                <div key={cat.id || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm">
-                                    <span className="font-medium text-gray-700">{cat.nombre}</span>
-                                    {/* Future: Delete button could go here */}
+                                <div key={cat.idCategoria || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm gap-2">
+                                    {editingId === cat.idCategoria ? (
+                                        <>
+                                            <input
+                                                value={editingName}
+                                                onChange={(e) => setEditingName(e.target.value)}
+                                                className="flex-1 px-2 py-1 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                                                onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={handleUpdate}
+                                                disabled={updating || !editingName.trim()}
+                                                className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                                title="Guardar"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={handleCancelEdit}
+                                                className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+                                                title="Cancelar"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="flex-1 font-medium text-gray-700">{cat.nombre || '-'}</span>
+                                            <button
+                                                onClick={() => handleStartEdit(cat)}
+                                                className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(cat.idCategoria)}
+                                                disabled={deleting === cat.idCategoria}
+                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             ))
                         )}
@@ -108,6 +215,23 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
+
+            <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Estás a punto de eliminar esta categoría. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={executeDelete} className="bg-red-600 hover:bg-red-700">
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     )
 }

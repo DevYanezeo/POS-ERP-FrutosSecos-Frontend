@@ -55,7 +55,7 @@ export default function InventoryConfigCard({ inventario, onChange }: { inventar
             <option>Desactivadas</option>
           </select>
         </div>
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-[#6A5F55] mb-1">Actualización Automática de Precio</label>
           <select
             value={inventario.modoPrecio}
@@ -65,7 +65,7 @@ export default function InventoryConfigCard({ inventario, onChange }: { inventar
             <option>Manual</option>
             <option>Automática</option>
           </select>
-        </div>
+        </div> */}
 
         <div className="pt-2 border-t border-gray-100">
           <label className="block text-sm font-medium text-[#6A5F55] mb-2">Categorías de Productos</label>

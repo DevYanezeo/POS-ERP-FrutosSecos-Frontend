@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes } from "@/lib/lotes"
+import { listarLotesPorProducto, crearLote, updateFechaVencimientoLote, updateCantidadLote, updateEstadoLote, getAllCodigosLotes, updateCostoLote } from "@/lib/lotes"
+import { getCategorias } from "@/lib/productos"
 import { Plus, Eye, Edit, Trash2, PlusCircle, MinusCircle, Search, Sliders, LayoutGrid, List } from "lucide-react"
 import {
   Dialog,
@@ -22,8 +23,8 @@ function Tabs({ activeTab, onTabChange, tabs }: { activeTab: string; onTabChange
           key={tab}
           onClick={() => onTabChange(tab)}
           className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
-              ? 'text-[#A0522D] border-[#A0522D]'
-              : 'text-gray-500 hover:text-gray-700 border-transparent'
+            ? 'text-[#A0522D] border-[#A0522D]'
+            : 'text-gray-500 hover:text-gray-700 border-transparent'
             }`}
         >
           {tab}
@@ -52,19 +53,24 @@ export default function EditProductDialog({
   const [editNombre, setEditNombre] = useState('')
   const [editPrecio, setEditPrecio] = useState<number | ''>(0)
   const [editUnidad, setEditUnidad] = useState('')
+  const [editUnidadType, setEditUnidadType] = useState('gr')
   const [editDescripcion, setEditDescripcion] = useState('')
   const [editEstado, setEditEstado] = useState(true)
+  const [editCategoria, setEditCategoria] = useState<number | null>(null)
+  const [categorias, setCategorias] = useState<any[]>([])
   const [processing, setProcessing] = useState(false)
   const [lotes, setLotes] = useState<any[]>([])
   const [loadingLotes, setLoadingLotes] = useState(false)
   const [showCreateLote, setShowCreateLote] = useState(false)
   const [codigoLote, setCodigoLote] = useState('')
   const [cantidadLote, setCantidadLote] = useState<number | ''>(0)
+  const [costoLote, setCostoLote] = useState<number | ''>(0)
   const [fechaVencimiento, setFechaVencimiento] = useState('')
   const [creatingLote, setCreatingLote] = useState(false)
   const [editingLote, setEditingLote] = useState<any | null>(null)
   const [editFechaVencimiento, setEditFechaVencimiento] = useState('')
   const [editCantidad, setEditCantidad] = useState<number | ''>(0)
+  const [editCosto, setEditCosto] = useState<number | ''>(0)
   const [editEstadoLote, setEditEstadoLote] = useState<boolean>(true)
   const [updatingLote, setUpdatingLote] = useState(false)
 
@@ -72,9 +78,34 @@ export default function EditProductDialog({
     if (product && open) {
       setEditNombre(product.nombre || '')
       setEditPrecio(product.precio ?? 0)
-      setEditUnidad(product.unidad || '')
+
+      // Parse unidad (e.g. "500gr" -> "500" + "gr")
+      const rawUnidad = product.unidad || ''
+      const match = rawUnidad.match(/^(\d+)\s*([a-zA-Z]+)$/)
+      if (match) {
+        setEditUnidad(match[1])
+        setEditUnidadType(match[2].toLowerCase())
+      } else {
+        // Fallback: try to just get numbers, default to gr if strict number
+        const nums = rawUnidad.replace(/[^0-9]/g, '')
+        setEditUnidad(nums)
+        setEditUnidadType('gr')
+      }
       setEditDescripcion(product.descripcion || '')
       setEditEstado(product.estado !== false)
+      setEditCategoria(product.categoriaId ?? null)
+
+      // Cargar categorías
+      const fetchCategorias = async () => {
+        try {
+          const cats = await getCategorias()
+          setCategorias(cats || [])
+        } catch (e) {
+          console.error('Error cargando categorías:', e)
+        }
+      }
+      fetchCategorias()
+
       const fetchLotes = async () => {
         setLoadingLotes(true)
         try {
@@ -96,6 +127,7 @@ export default function EditProductDialog({
     if (editingLote) {
       setEditFechaVencimiento(editingLote.fechaVencimiento ? editingLote.fechaVencimiento.split('T')[0] : '')
       setEditCantidad(editingLote.cantidad || editingLote.stock || 0)
+      setEditCosto(editingLote.costo || 0)
       setEditEstadoLote(editingLote.estado !== false)
     }
   }, [editingLote])
@@ -165,6 +197,7 @@ export default function EditProductDialog({
         producto: { idProducto },
         codigoLote: codigoLote,
         cantidad: Number(cantidadLote),
+        costo: Number(costoLote),
         fechaVencimiento: fechaVencimiento ? fechaVencimiento : null,
         estado: true
       }
@@ -174,6 +207,7 @@ export default function EditProductDialog({
 
       setCodigoLote('')
       setCantidadLote(0)
+      setCostoLote(0)
       setFechaVencimiento('')
       setShowCreateLote(false)
 
@@ -201,6 +235,9 @@ export default function EditProductDialog({
       }
       if (Number(editCantidad) !== (editingLote.cantidad || editingLote.stock)) {
         await updateCantidadLote(idLote, Number(editCantidad))
+      }
+      if (Number(editCosto) !== (editingLote.costo || 0)) {
+        await updateCostoLote(idLote, Number(editCosto))
       }
       if (editEstadoLote !== (editingLote.estado !== false)) {
         await updateEstadoLote(idLote, editEstadoLote)
@@ -244,13 +281,17 @@ export default function EditProductDialog({
       const payload: any = {
         nombre: editNombre,
         descripcion: editDescripcion,
-        unidad: editUnidad,
+        unidad: `${editUnidad}${editUnidadType}`,
         estado: editEstado,
         lotes: existingLotes
       }
 
       if (editPrecio !== '') {
         payload.precio = parseInt(String(editPrecio), 10)
+      }
+
+      if (editCategoria !== null) {
+        payload.categoriaId = editCategoria
       }
 
       // Evitar PUT si no hay cambios en los campos del producto
@@ -260,6 +301,7 @@ export default function EditProductDialog({
         unidad: product?.unidad || '',
         estado: product?.estado !== false,
         precio: product?.precio ?? undefined,
+        categoriaId: product?.categoriaId ?? null,
       }
       const computed = { ...payload }
       if (computed.precio === undefined) delete (computed as any).precio
@@ -268,7 +310,8 @@ export default function EditProductDialog({
         original.descripcion !== computed.descripcion ||
         original.unidad !== computed.unidad ||
         original.estado !== computed.estado ||
-        (computed.precio !== undefined && original.precio !== computed.precio)
+        (computed.precio !== undefined && original.precio !== computed.precio) ||
+        original.categoriaId !== computed.categoriaId
       )
       if (!hasChanges) {
         setProcessing(false)
@@ -276,7 +319,7 @@ export default function EditProductDialog({
         return
       }
 
-      console.log('EditProductDialog - Payload:', payload)
+      console.log('EditProductDialog - Payload to send:', JSON.stringify(payload, null, 2))
       await onUpdate(id, payload)
       onSuccess()
       onOpenChange(false)
@@ -293,6 +336,9 @@ export default function EditProductDialog({
       setProcessing(false)
     }
   }
+
+  console.log('EditProductDialog - Render - Categorias:', categorias)
+  console.log('EditProductDialog - Render - EditCategoria ID:', editCategoria)
 
   return (
     <>
@@ -324,6 +370,22 @@ export default function EditProductDialog({
                   />
                 </div>
 
+                <div>
+                  <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Categoría</label>
+                  <select
+                    value={editCategoria ?? ''}
+                    onChange={(e) => setEditCategoria(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                  >
+                    <option value="">Sin categoría</option>
+                    {categorias.map(cat => (
+                      <option key={cat.idCategoria} value={cat.idCategoria}>
+                        {cat.nombre || '-'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Precio</label>
@@ -337,19 +399,25 @@ export default function EditProductDialog({
                   </div>
                   <div>
                     <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Presentación</label>
-                    <div className="flex items-center gap-0 border rounded overflow-hidden focus-within:border-[#A0522D]">
+                    <div className="flex items-center gap-0 border rounded overflow-hidden h-[34px]">
                       <input
                         type="number"
-                        value={editUnidad.replace(/[^0-9]/g, '')}
-                        onChange={(e) => {
-                          // Solo guardar números + 'gr'
-                          const num = e.target.value.replace(/[^0-9]/g, '')
-                          setEditUnidad(num ? `${num}gr` : '')
-                        }}
+                        value={editUnidad}
+                        onChange={(e) => setEditUnidad(e.target.value)}
                         placeholder="250"
-                        className="w-full px-2 py-1.5 border-0 outline-none text-sm"
+                        className="w-full px-2 py-1.5 border-0 outline-none text-sm h-full"
                       />
-                      <span className="px-2 py-1.5 bg-[#F5EDE4] text-[#7A6F66] font-medium text-sm whitespace-nowrap">gr</span>
+                      <select
+                        value={editUnidadType}
+                        onChange={(e) => setEditUnidadType(e.target.value)}
+                        className="px-2 py-1.5 bg-[#F5EDE4] text-[#7A6F66] font-medium text-sm border-l border-[#F5EDE4] outline-none cursor-pointer hover:bg-[#E5DDD4] h-full transition-colors"
+                      >
+                        <option value="gr">gr</option>
+                        <option value="kg">kg</option>
+                        <option value="ml">ml</option>
+                        <option value="lt">lt</option>
+                        <option value="un">un</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -407,8 +475,8 @@ export default function EditProductDialog({
                             <div className="flex items-center gap-2 mb-1">
                               <div className="font-medium text-sm text-gray-800">{codigo}</div>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isHabilitado
-                                  ? 'bg-green-100 text-green-800 border border-green-200'
-                                  : 'bg-red-100 text-red-800 border border-red-200'
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : 'bg-red-100 text-red-800 border border-red-200'
                                 }`}>
                                 {isHabilitado ? '✓ Habilitado' : '✕ Deshabilitado'}
                               </span>
@@ -489,6 +557,20 @@ export default function EditProductDialog({
               />
             </div>
             <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Costo de Adquisición (Unitario)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={costoLote}
+                  onChange={(e) => setCostoLote(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  className="w-full pl-6 pr-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                />
+              </div>
+            </div>
+            <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>
               <input
                 type="date"
@@ -532,6 +614,20 @@ export default function EditProductDialog({
                 min="1"
                 className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
               />
+            </div>
+            <div>
+              <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Costo de Adquisición (Unitario)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={editCosto}
+                  onChange={(e) => setEditCosto(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  className="w-full pl-6 pr-2 py-1.5 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                />
+              </div>
             </div>
             <div>
               <label className="text-xs text-[#7A6F66] mb-1 block font-medium">Fecha de Vencimiento</label>

@@ -15,7 +15,8 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const autoTriggerRef = useRef<NodeJS.Timeout | null>(null)
   const MIN_AUTO_LEN = 6
-  const AUTO_DELAY_MS = 140
+  // Aumentado a 1000ms para evitar lecturas incompletas si el scanner envía datos por chunks o muy lento
+  const AUTO_DELAY_MS = 1000
 
   // Auto-focus on mount
   useEffect(() => {
@@ -26,11 +27,13 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
+      // Si se presiona Enter, cancelar cualquier timer automático pendiente y buscar inmediatamente
+      if (autoTriggerRef.current) clearTimeout(autoTriggerRef.current)
       handleSearch()
     } else {
       // Si se está escribiendo rápidamente (scanner), activar indicador
       if (!isScanning) setIsScanning(true)
-      
+
       // Reset timeout
       if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
       scanTimeoutRef.current = setTimeout(() => {
@@ -68,7 +71,7 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
     }
 
     setIsScanning(true)
-    
+
     try {
       // Buscar por código de lote usando el endpoint de lotes
       const { getLoteByCodigo } = await import('@/lib/lotes')
@@ -84,7 +87,7 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
       // Entrega el objeto lote completo al caller para que decida qué hacer (producto, cantidad, etc.)
       onProductFound(lote)
       setScanCode('')
-      
+
       // Volver a enfocar para próximo escaneo
       setTimeout(() => {
         inputRef.current?.focus()
@@ -115,11 +118,10 @@ export default function ScanProductoInput({ onProductFound, onError }: ScanProdu
             if (pasted) handleChange(pasted)
           }}
           placeholder="Escanee código de barras o busque..."
-          className={`w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
-            isScanning 
-              ? 'border-green-500 focus:ring-green-500 bg-green-50' 
-              : 'border-gray-300 focus:ring-blue-500'
-          }`}
+          className={`w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${isScanning
+            ? 'border-green-500 focus:ring-green-500 bg-green-50'
+            : 'border-gray-300 focus:ring-blue-500'
+            }`}
           autoComplete="off"
         />
         {isScanning && (
