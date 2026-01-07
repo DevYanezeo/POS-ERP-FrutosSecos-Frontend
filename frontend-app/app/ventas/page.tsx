@@ -54,7 +54,7 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
       ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
-      <div class="tot"><div style="display:flex;justify-content:space-between">SUBTOTAL<span>${subtotal.toLocaleString()}</span></div><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
+      <div class="tot"><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
       <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p></div></div>
       </body></html>`
 

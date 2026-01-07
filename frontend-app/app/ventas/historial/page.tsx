@@ -120,10 +120,12 @@ export default function HistorialVentasPage() {
 
       const ventas: Venta[] = await response.json()
 
+      const ventasActivas = ventas.filter(venta => venta.total > 0)
+
       // Agrupar ventas por día
       const ventasAgrupadas: VentasPorDia = {}
 
-      ventas.forEach(venta => {
+      ventasActivas.forEach(venta => {
         const fechaVenta = new Date(venta.fecha)
         const dia = fechaVenta.getDate()
 
