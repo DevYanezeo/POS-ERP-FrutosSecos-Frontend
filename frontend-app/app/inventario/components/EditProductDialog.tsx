@@ -92,7 +92,7 @@ export default function EditProductDialog({
         setEditUnidadType('gr')
       }
       setEditDescripcion(product.descripcion || '')
-      setEditEstado(product.estado !== false)
+      setEditEstado(product.estado === true || product.estado === 'true' || product.estado === 1 || product.estado === 'Activo')
       setEditCategoria(product.categoriaId ?? null)
 
       // Cargar categorías
