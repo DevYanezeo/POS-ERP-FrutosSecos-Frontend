@@ -17,19 +17,45 @@ function calcularIVA(subtotal: number) {
 // Generate printable boleta (opens print dialog). Uses /logo.png from public.
 function generarBoletaVenta(cart: any[], saleId?: any) {
   try {
-    const subtotal = cart.reduce((s, it) => s + (Number(it.precioUnitario) * Number(it.cantidad)), 0)
+    const totals = cart.reduce((acc, it) => {
+      const price = Number(it.precioUnitario)
+      const qty = Number(it.cantidad)
+      const gross = price * qty
+
+      const discount = Number(it.descuento || 0)
+      const netPrice = Math.round(price * (1 - discount / 100))
+      const net = netPrice * qty
+      const discountAmount = gross - net
+
+      return {
+        bruto: acc.bruto + gross,
+        descuento: acc.descuento + discountAmount,
+        neto: acc.neto + net
+      }
+    }, { bruto: 0, descuento: 0, neto: 0 })
+
     const logoUrl = '/logo.png'
     const title = 'COMPROBANTE DE PRODUCTOS'
     const footerNote = `Documento no válido como boleta`
 
-    const rows = (cart || []).map((it: any) => `
+    const rows = (cart || []).map((it: any) => {
+      const price = Number(it.precioUnitario || it.price)
+      const discount = Number(it.descuento || 0)
+      const finalPrice = Math.round(price * (1 - discount / 100))
+      const totalItem = finalPrice * Number(it.cantidad)
+      const originalTotal = price * Number(it.cantidad)
+
+      return `
       <tr>
-        <td style="padding:6px 0">${it.nombre || it.name} ${it.unidad || ''}</td>
+        <td style="padding:6px 0">
+          ${it.nombre || it.name} ${it.unidad || ''}
+          ${discount > 0 ? `<br/><small style="color:#666">Desc: ${discount}% (Ahorro: $${(originalTotal - totalItem).toLocaleString()})</small>` : ''}
+        </td>
         <td style="text-align:center">${it.cantidad}</td>
-        <td style="text-align:right">${Number(it.precioUnitario || it.price).toLocaleString()}</td>
-        <td style="text-align:right">${(Number(it.precioUnitario || it.price) * Number(it.cantidad)).toLocaleString()}</td>
+        <td style="text-align:right">${price.toLocaleString()}</td>
+        <td style="text-align:right">${totalItem.toLocaleString()}</td>
       </tr>
-    `).join('\n')
+    `}).join('\n')
 
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -48,13 +74,28 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         td:nth-child(4){width:15%;text-align:right}
         .right{text-align:right}
         .tot{border-top:1px dashed #000;margin-top:10px;padding-top:10px;font-weight:700}
+        .row-tot { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .footer{font-size:10px;color:#000;margin-top:10px}
         .note{color:#000;font-weight:600;font-size:11px}
       </style>
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
       ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
-      <div class="tot"><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
+      <div class="tot">
+        <div class="row-tot">
+          <span>SUBTOTAL</span>
+          <span>$${totals.bruto.toLocaleString()}</span>
+        </div>
+        ${totals.descuento > 0 ? `
+        <div class="row-tot" style="color:#000; font-weight:normal;">
+          <span>DESCUENTOS</span>
+          <span>-$${totals.descuento.toLocaleString()}</span>
+        </div>` : ''}
+        <div class="row-tot" style="font-size:1.2em; margin-top:8px">
+          <span>TOTAL</span>
+          <span>$${totals.neto.toLocaleString()}</span>
+        </div>
+      </div>
       <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p></div></div>
       </body></html>`
 
@@ -210,6 +251,7 @@ export default function VentasPage() {
         unidad: producto?.unidad || '',
         idLote: loteId,
         stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
+        descuento: 0, // Descuento inicial 0%
       }]
     })
   }
@@ -232,8 +274,20 @@ export default function VentasPage() {
           }
         }
 
-        validateCartItem(i, newCantidad, item.precioUnitario)
+        validateCartItem(i, newCantidad, item.precioUnitario, item.descuento || 0)
         return { ...item, cantidad: newCantidad }
+      }
+      return item
+    }))
+  }
+
+  function changeDiscount(index: number, newDiscountStr: string) {
+    const newDiscount = Number(newDiscountStr)
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        // Allow updating state even if invalid for smooth typing, but validate visuals
+        validateCartItem(i, item.cantidad, item.precioUnitario, newDiscount)
+        return { ...item, descuento: newDiscount }
       }
       return item
     }))
@@ -248,7 +302,7 @@ export default function VentasPage() {
     })
   }
 
-  function validateCartItem(index: number, cantidad: number, precio: number): boolean {
+  function validateCartItem(index: number, cantidad: number, precio: number, descuento: number = 0): boolean {
     const item = cart[index]
     const errors: Record<number, string> = { ...validationErrors }
 
@@ -260,6 +314,12 @@ export default function VentasPage() {
 
     if (precio <= 0) {
       errors[index] = 'El precio debe ser mayor a 0'
+      setValidationErrors(errors)
+      return false
+    }
+
+    if (descuento < 0 || descuento > 100) {
+      errors[index] = 'Descuento inválido (0-100%)'
       setValidationErrors(errors)
       return false
     }
@@ -288,7 +348,7 @@ export default function VentasPage() {
     const cantidadNum = Number(editCantidad)
     const precioNum = Number(editPrecio)
 
-    if (!validateCartItem(editingItem, cantidadNum, precioNum)) {
+    if (!validateCartItem(editingItem, cantidadNum, precioNum, cart[editingItem].descuento || 0)) {
       showNotification('error', 'Valores inválidos')
       return
     }
@@ -307,8 +367,27 @@ export default function VentasPage() {
     setEditingItem(null)
   }
 
+  function calcularTotales() {
+    return cart.reduce((acc, it) => {
+      const price = it.precioUnitario
+      const qty = it.cantidad
+      const gross = price * qty
+
+      const discount = it.descuento || 0
+      const netPrice = Math.round(price * (1 - discount / 100))
+      const net = netPrice * qty
+      const discountAmount = gross - net
+
+      return {
+        bruto: acc.bruto + gross,
+        descuento: acc.descuento + discountAmount,
+        neto: acc.neto + net
+      }
+    }, { bruto: 0, descuento: 0, neto: 0 })
+  }
+
   function calcularSubtotal() {
-    return cart.reduce((acc, it) => acc + (it.precioUnitario * it.cantidad), 0)
+    return calcularTotales().neto
   }
 
   async function handleAdvancedSearch() {
@@ -391,7 +470,7 @@ export default function VentasPage() {
     // Validar todos los items
     let hasErrors = false
     cart.forEach((item, index) => {
-      if (!validateCartItem(index, item.cantidad, item.precioUnitario)) {
+      if (!validateCartItem(index, item.cantidad, item.precioUnitario, item.descuento || 0)) {
         hasErrors = true
       }
     })
@@ -465,12 +544,15 @@ export default function VentasPage() {
       fiado: esFiado,
       clienteId: clienteId || null,
       fechaVencimientoPago: fechaVencimientoPago || null,
-      detalles: cart.map((it: any) => ({
-        productoId: Number(it.productoId),
-        cantidad: Math.round(Number(it.cantidad)),
-        precioUnitario: Math.round(Number(it.precioUnitario)),
-        idLote: it.idLote == null ? null : Number(it.idLote),
-      }))
+      detalles: cart.map((it: any) => {
+        const precioConDescuento = Math.round(it.precioUnitario * (1 - (it.descuento || 0) / 100))
+        return {
+          productoId: Number(it.productoId),
+          cantidad: Math.round(Number(it.cantidad)),
+          precioUnitario: precioConDescuento,
+          idLote: it.idLote == null ? null : Number(it.idLote),
+        }
+      })
     }
 
     // Agregar datos del cliente si están disponibles
@@ -759,9 +841,16 @@ export default function VentasPage() {
                                   ${item.precioUnitario.toLocaleString()} × {item.cantidad}
                                 </p>
                               </div>
-                              <p className="text-xl font-bold text-green-600">
-                                ${(item.precioUnitario * item.cantidad).toLocaleString()}
-                              </p>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-green-600">
+                                  ${(Math.round(item.precioUnitario * (1 - (item.descuento || 0) / 100)) * item.cantidad).toLocaleString()}
+                                </p>
+                                {item.descuento > 0 && (
+                                  <p className="text-xs text-gray-400 line-through">
+                                    ${(item.precioUnitario * item.cantidad).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
                             {validationErrors[index] && (
@@ -786,7 +875,22 @@ export default function VentasPage() {
                                   +
                                 </button>
                               </div>
+
+                              <div className="flex items-center gap-1 border-2 border-gray-300 rounded-lg px-2 py-1 ml-2" title="Descuento Directo (%)">
+                                <span className="text-xs font-bold text-gray-500">Desc%</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  className="w-12 text-center font-bold text-gray-700 focus:outline-none border-b border-gray-300"
+                                  value={item.descuento || 0}
+                                  onChange={(e) => changeDiscount(index, e.target.value)}
+                                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                                />
+                              </div>
+
                               <button
+
                                 onClick={() => startEditingItem(index)}
                                 className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center gap-1"
                                 title="Editar producto"
@@ -814,15 +918,21 @@ export default function VentasPage() {
               {/* Totales */}
               {cart.length > 0 && (
                 <div className="border-t-2 border-gray-300 pt-4 space-y-3">
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-700">Subtotal:</span>
-                    <span className="font-semibold text-gray-800">${calcularSubtotal().toLocaleString()}</span>
+                  <div className="flex justify-between text-lg text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>${calcularTotales().bruto.toLocaleString()}</span>
                   </div>
+                  {calcularTotales().descuento > 0 && (
+                    <div className="flex justify-between text-lg text-red-500 font-medium">
+                      <span>Descuentos:</span>
+                      <span>-${calcularTotales().descuento.toLocaleString()}</span>
+                    </div>
+                  )}
                   {/* IVA row removed (was showing $0) */}
                   <div className="flex justify-between text-2xl border-t-2 border-gray-300 pt-3">
                     <span className="font-bold text-gray-900">TOTAL:</span>
                     <span className="font-bold text-green-600">
-                      ${(calcularSubtotal() + calcularIVA(calcularSubtotal())).toLocaleString()}
+                      ${calcularTotales().neto.toLocaleString()}
                     </span>
                   </div>
 
