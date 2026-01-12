@@ -7,7 +7,7 @@ import { confirmarVenta } from '@/lib/ventas'
 import { buscarOCrearCliente } from '@/lib/clientesFiado'
 import { useRouter } from 'next/navigation'
 import ScanProductoInput from './components/ScanProductoInput'
-import { Loader2, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
+import { Loader2, ShoppingCart, Edit2, Trash2, Percent, DollarSign, ChevronUp, ChevronDown } from 'lucide-react'
 
 function calcularIVA(subtotal: number) {
   // IVA removed per client request: always 0
@@ -935,22 +935,66 @@ export default function VentasPage() {
                                 </button>
                               </div>
 
-                              <div className="flex items-center gap-1 border-2 border-gray-300 rounded-lg px-2 py-1 ml-2" title={`Descuento (${item.tipoDescuento === 'FIXED' ? '$ Monto' : '% Porcentaje'})`}>
-                                <button
-                                  onClick={() => toggleDiscountType(index)}
-                                  className="text-xs font-bold text-gray-500 hover:text-blue-600 hover:bg-blue-50 px-1 rounded transition-colors"
-                                >
-                                  {item.tipoDescuento === 'FIXED' ? 'Desc$' : 'Desc%'}
-                                </button>
+                              <div className="flex items-center border-2 border-gray-300 rounded-lg ml-2 overflow-hidden bg-white shadow-sm h-10" title="Tipo de Descuento">
+                                <div className="flex border-r-2 border-gray-300 h-full">
+                                  <button
+                                    onClick={() => item.tipoDescuento !== 'PERCENT' && toggleDiscountType(index)}
+                                    className={`w-10 h-full flex items-center justify-center transition-all ${item.tipoDescuento === 'PERCENT'
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      }`}
+                                    title="Porcentaje (%)"
+                                  >
+                                    <Percent className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                  <button
+                                    onClick={() => item.tipoDescuento !== 'FIXED' && toggleDiscountType(index)}
+                                    className={`w-10 h-full flex items-center justify-center transition-all ${item.tipoDescuento === 'FIXED'
+                                      ? 'bg-green-600 text-white'
+                                      : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      }`}
+                                    title="Monto ($)"
+                                  >
+                                    <DollarSign className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                </div>
+
                                 <input
                                   type="number"
                                   min="0"
                                   max={item.tipoDescuento === 'PERCENT' ? "100" : undefined}
-                                  className="w-16 text-center font-bold text-gray-700 focus:outline-none border-b border-gray-300"
-                                  value={item.descuento || 0}
+                                  className="w-20 text-center font-bold text-gray-800 focus:outline-none px-1 text-xl h-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  placeholder="0"
+                                  value={item.descuento || ''}
                                   onChange={(e) => changeDiscount(index, e.target.value)}
                                   onClick={(e) => (e.target as HTMLInputElement).select()}
                                 />
+
+                                <div className="flex flex-col border-l-2 border-gray-300 h-full w-8">
+                                  <button
+                                    onClick={() => {
+                                      const current = Number(item.descuento || 0)
+                                      const step = 1
+                                      let next = current + step
+                                      if (item.tipoDescuento === 'PERCENT' && next > 100) next = 100
+                                      changeDiscount(index, String(next))
+                                    }}
+                                    className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 border-b border-gray-200 active:bg-gray-200 transition-colors"
+                                  >
+                                    <ChevronUp className="w-3 h-3" strokeWidth={3} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const current = Number(item.descuento || 0)
+                                      const step = 1
+                                      const next = Math.max(0, current - step)
+                                      changeDiscount(index, String(next))
+                                    }}
+                                    className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 active:bg-gray-200 transition-colors"
+                                  >
+                                    <ChevronDown className="w-3 h-3" strokeWidth={3} />
+                                  </button>
+                                </div>
                               </div>
 
                               <button
