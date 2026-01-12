@@ -23,7 +23,15 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       const gross = price * qty
 
       const discount = Number(it.descuento || 0)
-      const netPrice = Math.round(price * (1 - discount / 100))
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let netPrice = price
+      if (tipo === 'FIXED') {
+        netPrice = Math.max(0, price - discount)
+      } else {
+        netPrice = Math.round(price * (1 - discount / 100))
+      }
+
       const net = netPrice * qty
       const discountAmount = gross - net
 
@@ -41,7 +49,15 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
     const rows = (cart || []).map((it: any) => {
       const price = Number(it.precioUnitario || it.price)
       const discount = Number(it.descuento || 0)
-      const finalPrice = Math.round(price * (1 - discount / 100))
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let finalPrice = price
+      if (tipo === 'FIXED') {
+        finalPrice = Math.max(0, price - discount)
+      } else {
+        finalPrice = Math.round(price * (1 - discount / 100))
+      }
+
       const totalItem = finalPrice * Number(it.cantidad)
       const originalTotal = price * Number(it.cantidad)
 
@@ -49,7 +65,7 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       <tr>
         <td style="padding:6px 0">
           ${it.nombre || it.name} ${it.unidad || ''}
-          ${discount > 0 ? `<br/><small style="color:#666">Desc: ${discount}% (Ahorro: $${(originalTotal - totalItem).toLocaleString()})</small>` : ''}
+          ${discount > 0 ? `<br/><small style="color:#666">Desc: ${tipo === 'PERCENT' ? `${discount}%` : `$${discount}`} (Ahorro: $${(originalTotal - totalItem).toLocaleString()})</small>` : ''}
         </td>
         <td style="text-align:center">${it.cantidad}</td>
         <td style="text-align:right">${price.toLocaleString()}</td>
@@ -251,9 +267,23 @@ export default function VentasPage() {
         unidad: producto?.unidad || '',
         idLote: loteId,
         stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
-        descuento: 0, // Descuento inicial 0%
+        descuento: 0, // Descuento inicial 0
+        tipoDescuento: 'PERCENT', // 'PERCENT' | 'FIXED'
       }]
     })
+  }
+
+  function toggleDiscountType(index: number) {
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        // Reset discount value to 0 when switching types to avoid confusion (e.g. 50% -> $50 is weird)
+        // or keep it but validate. Let's keep it but re-validate will happen on render/change.
+        // Better UX: reset to 0 or convert? Resetting is safer to avoid huge prices or invalid %.
+        // Let's reset to 0 for safety.
+        return { ...item, tipoDescuento: item.tipoDescuento === 'FIXED' ? 'PERCENT' : 'FIXED', descuento: 0 }
+      }
+      return item
+    }))
   }
 
   function changeCantidad(index: number, delta: number) {
@@ -274,7 +304,7 @@ export default function VentasPage() {
           }
         }
 
-        validateCartItem(i, newCantidad, item.precioUnitario, item.descuento || 0)
+        validateCartItem(i, newCantidad, item.precioUnitario, item.descuento || 0, item.tipoDescuento || 'PERCENT')
         return { ...item, cantidad: newCantidad }
       }
       return item
@@ -286,7 +316,7 @@ export default function VentasPage() {
     setCart(prev => prev.map((item, i) => {
       if (i === index) {
         // Allow updating state even if invalid for smooth typing, but validate visuals
-        validateCartItem(i, item.cantidad, item.precioUnitario, newDiscount)
+        validateCartItem(i, item.cantidad, item.precioUnitario, newDiscount, item.tipoDescuento || 'PERCENT')
         return { ...item, descuento: newDiscount }
       }
       return item
@@ -302,7 +332,7 @@ export default function VentasPage() {
     })
   }
 
-  function validateCartItem(index: number, cantidad: number, precio: number, descuento: number = 0): boolean {
+  function validateCartItem(index: number, cantidad: number, precio: number, descuento: number = 0, tipoDescuento: 'PERCENT' | 'FIXED' = 'PERCENT'): boolean {
     const item = cart[index]
     const errors: Record<number, string> = { ...validationErrors }
 
@@ -318,10 +348,18 @@ export default function VentasPage() {
       return false
     }
 
-    if (descuento < 0 || descuento > 100) {
-      errors[index] = 'Descuento inválido (0-100%)'
-      setValidationErrors(errors)
-      return false
+    if (tipoDescuento === 'PERCENT') {
+      if (descuento < 0 || descuento > 100) {
+        errors[index] = 'Descuento inválido (0-100%)'
+        setValidationErrors(errors)
+        return false
+      }
+    } else {
+      if (descuento < 0 || descuento > precio) {
+        errors[index] = `Descuento inválido (máx $${precio})`
+        setValidationErrors(errors)
+        return false
+      }
     }
 
     // Validar stock disponible
@@ -348,7 +386,7 @@ export default function VentasPage() {
     const cantidadNum = Number(editCantidad)
     const precioNum = Number(editPrecio)
 
-    if (!validateCartItem(editingItem, cantidadNum, precioNum, cart[editingItem].descuento || 0)) {
+    if (!validateCartItem(editingItem, cantidadNum, precioNum, cart[editingItem].descuento || 0, cart[editingItem].tipoDescuento || 'PERCENT')) {
       showNotification('error', 'Valores inválidos')
       return
     }
@@ -374,7 +412,15 @@ export default function VentasPage() {
       const gross = price * qty
 
       const discount = it.descuento || 0
-      const netPrice = Math.round(price * (1 - discount / 100))
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let netPrice = price
+      if (tipo === 'FIXED') {
+        netPrice = Math.max(0, price - discount)
+      } else {
+        netPrice = Math.round(price * (1 - discount / 100))
+      }
+
       const net = netPrice * qty
       const discountAmount = gross - net
 
@@ -468,9 +514,10 @@ export default function VentasPage() {
     }
 
     // Validar todos los items
+    // Validar todos los items
     let hasErrors = false
     cart.forEach((item, index) => {
-      if (!validateCartItem(index, item.cantidad, item.precioUnitario, item.descuento || 0)) {
+      if (!validateCartItem(index, item.cantidad, item.precioUnitario, item.descuento || 0, item.tipoDescuento || 'PERCENT')) {
         hasErrors = true
       }
     })
@@ -545,7 +592,16 @@ export default function VentasPage() {
       clienteId: clienteId || null,
       fechaVencimientoPago: fechaVencimientoPago || null,
       detalles: cart.map((it: any) => {
-        const precioConDescuento = Math.round(it.precioUnitario * (1 - (it.descuento || 0) / 100))
+        const discount = it.descuento || 0
+        const tipo = it.tipoDescuento || 'PERCENT'
+        let precioConDescuento = it.precioUnitario
+
+        if (tipo === 'FIXED') {
+          precioConDescuento = Math.max(0, it.precioUnitario - discount)
+        } else {
+          precioConDescuento = Math.round(it.precioUnitario * (1 - discount / 100))
+        }
+
         return {
           productoId: Number(it.productoId),
           cantidad: Math.round(Number(it.cantidad)),
@@ -843,7 +899,10 @@ export default function VentasPage() {
                               </div>
                               <div className="text-right">
                                 <p className="text-xl font-bold text-green-600">
-                                  ${(Math.round(item.precioUnitario * (1 - (item.descuento || 0) / 100)) * item.cantidad).toLocaleString()}
+                                  ${((item.tipoDescuento === 'FIXED'
+                                    ? Math.max(0, item.precioUnitario - (item.descuento || 0))
+                                    : Math.round(item.precioUnitario * (1 - (item.descuento || 0) / 100))
+                                  ) * item.cantidad).toLocaleString()}
                                 </p>
                                 {item.descuento > 0 && (
                                   <p className="text-xs text-gray-400 line-through">
@@ -876,13 +935,18 @@ export default function VentasPage() {
                                 </button>
                               </div>
 
-                              <div className="flex items-center gap-1 border-2 border-gray-300 rounded-lg px-2 py-1 ml-2" title="Descuento Directo (%)">
-                                <span className="text-xs font-bold text-gray-500">Desc%</span>
+                              <div className="flex items-center gap-1 border-2 border-gray-300 rounded-lg px-2 py-1 ml-2" title={`Descuento (${item.tipoDescuento === 'FIXED' ? '$ Monto' : '% Porcentaje'})`}>
+                                <button
+                                  onClick={() => toggleDiscountType(index)}
+                                  className="text-xs font-bold text-gray-500 hover:text-blue-600 hover:bg-blue-50 px-1 rounded transition-colors"
+                                >
+                                  {item.tipoDescuento === 'FIXED' ? 'Desc$' : 'Desc%'}
+                                </button>
                                 <input
                                   type="number"
                                   min="0"
-                                  max="100"
-                                  className="w-12 text-center font-bold text-gray-700 focus:outline-none border-b border-gray-300"
+                                  max={item.tipoDescuento === 'PERCENT' ? "100" : undefined}
+                                  className="w-16 text-center font-bold text-gray-700 focus:outline-none border-b border-gray-300"
                                   value={item.descuento || 0}
                                   onChange={(e) => changeDiscount(index, e.target.value)}
                                   onClick={(e) => (e.target as HTMLInputElement).select()}
