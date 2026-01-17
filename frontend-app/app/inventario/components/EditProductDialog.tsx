@@ -92,7 +92,7 @@ export default function EditProductDialog({
         setEditUnidadType('gr')
       }
       setEditDescripcion(product.descripcion || '')
-      setEditEstado(product.estado !== false)
+      setEditEstado(product.estado === true || product.estado === 'true' || product.estado === 1 || product.estado === 'Activo')
       setEditCategoria(product.categoriaId ?? null)
 
       // Cargar categorías
@@ -299,7 +299,7 @@ export default function EditProductDialog({
         nombre: product?.nombre || '',
         descripcion: product?.descripcion || '',
         unidad: product?.unidad || '',
-        estado: product?.estado !== false,
+        estado: product?.estado === true || product?.estado === 'true' || product?.estado === 1 || product?.estado === 'Activo',
         precio: product?.precio ?? undefined,
         categoriaId: product?.categoriaId ?? null,
       }

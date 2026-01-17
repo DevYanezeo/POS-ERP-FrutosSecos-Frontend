@@ -203,7 +203,8 @@ export default function InventarioPage() {
         categoriaId,
         precio: Number(precio || 0),
         unidad: `${unidad.replace(/[^0-9]/g, '')}${unidadType}`,
-        stock: 0
+        stock: 0,
+        estado: true
       })
 
       setNombre('')
