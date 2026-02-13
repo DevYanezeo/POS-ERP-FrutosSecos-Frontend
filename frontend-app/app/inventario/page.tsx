@@ -165,7 +165,12 @@ export default function InventarioPage() {
     const loadCategorias = async () => {
       try {
         const data = await getCategorias()
-        setCategorias(data || [])
+        const categoriasOrdenadas = (data || []).sort((a: any, b: any) => {
+          const nombreA = (a.nombre || '').toLowerCase()
+          const nombreB = (b.nombre || '').toLowerCase()
+          return nombreA.localeCompare(nombreB)
+        })
+        setCategorias(categoriasOrdenadas)
       } catch (e: any) {
         console.error('Error cargando categorías:', e?.message)
       }
