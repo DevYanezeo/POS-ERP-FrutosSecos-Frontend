@@ -7,7 +7,7 @@ import { confirmarVenta } from '@/lib/ventas'
 import { buscarOCrearCliente } from '@/lib/clientesFiado'
 import { useRouter } from 'next/navigation'
 import ScanProductoInput from './components/ScanProductoInput'
-import { Loader2, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
+import { Loader2, ShoppingCart, Edit2, Trash2, Percent, DollarSign, ChevronUp, ChevronDown } from 'lucide-react'
 
 function calcularIVA(subtotal: number) {
   // IVA removed per client request: always 0
@@ -17,19 +17,61 @@ function calcularIVA(subtotal: number) {
 // Generate printable boleta (opens print dialog). Uses /logo.png from public.
 function generarBoletaVenta(cart: any[], saleId?: any) {
   try {
-    const subtotal = cart.reduce((s, it) => s + (Number(it.precioUnitario) * Number(it.cantidad)), 0)
+    const totals = cart.reduce((acc, it) => {
+      const price = Number(it.precioUnitario)
+      const qty = Number(it.cantidad)
+      const gross = price * qty
+
+      const discount = Number(it.descuento || 0)
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let netPrice = price
+      if (tipo === 'FIXED') {
+        netPrice = Math.max(0, price - discount)
+      } else {
+        netPrice = Math.round(price * (1 - discount / 100))
+      }
+
+      const net = netPrice * qty
+      const discountAmount = gross - net
+
+      return {
+        bruto: acc.bruto + gross,
+        descuento: acc.descuento + discountAmount,
+        neto: acc.neto + net
+      }
+    }, { bruto: 0, descuento: 0, neto: 0 })
+
     const logoUrl = '/logo.png'
     const title = 'COMPROBANTE DE PRODUCTOS'
     const footerNote = `Documento no válido como boleta`
 
-    const rows = (cart || []).map((it: any) => `
+    const rows = (cart || []).map((it: any) => {
+      const price = Number(it.precioUnitario || it.price)
+      const discount = Number(it.descuento || 0)
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let finalPrice = price
+      if (tipo === 'FIXED') {
+        finalPrice = Math.max(0, price - discount)
+      } else {
+        finalPrice = Math.round(price * (1 - discount / 100))
+      }
+
+      const totalItem = finalPrice * Number(it.cantidad)
+      const originalTotal = price * Number(it.cantidad)
+
+      return `
       <tr>
-        <td style="padding:6px 0">${it.nombre || it.name} ${it.unidad || ''}</td>
+        <td style="padding:6px 0">
+          ${it.nombre || it.name} ${it.unidad || ''}
+          ${discount > 0 ? `<br/><small style="color:#666">Desc: ${tipo === 'PERCENT' ? `${discount}%` : `$${discount}`} (Ahorro: $${(originalTotal - totalItem).toLocaleString()})</small>` : ''}
+        </td>
         <td style="text-align:center">${it.cantidad}</td>
-        <td style="text-align:right">${Number(it.precioUnitario || it.price).toLocaleString()}</td>
-        <td style="text-align:right">${(Number(it.precioUnitario || it.price) * Number(it.cantidad)).toLocaleString()}</td>
+        <td style="text-align:right">${price.toLocaleString()}</td>
+        <td style="text-align:right">${totalItem.toLocaleString()}</td>
       </tr>
-    `).join('\n')
+    `}).join('\n')
 
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Boleta</title>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -48,13 +90,28 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         td:nth-child(4){width:15%;text-align:right}
         .right{text-align:right}
         .tot{border-top:1px dashed #000;margin-top:10px;padding-top:10px;font-weight:700}
+        .row-tot { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .footer{font-size:10px;color:#000;margin-top:10px}
         .note{color:#000;font-weight:600;font-size:11px}
       </style>
       </head><body><div class="receipt"><img src="${logoUrl}" class="logo" alt="logo"/><h1>${title}</h1>
       ${saleId ? `<p style="text-align:center;font-weight:semi-bold;margin-bottom:8px">N° Operación: ${saleId}</p>` : ''}
       <table><thead><tr><td>Producto</td><td>Cant.</td><td>P.Unit</td><td>Total</td></tr></thead><tbody>${rows}</tbody></table>
-      <div class="tot"><div style="display:flex;justify-content:space-between;margin-top:8px">TOTAL<span>${subtotal.toLocaleString()}</span></div></div>
+      <div class="tot">
+        <div class="row-tot">
+          <span>SUBTOTAL</span>
+          <span>$${totals.bruto.toLocaleString()}</span>
+        </div>
+        ${totals.descuento > 0 ? `
+        <div class="row-tot" style="color:#000; font-weight:normal;">
+          <span>DESCUENTOS</span>
+          <span>-$${totals.descuento.toLocaleString()}</span>
+        </div>` : ''}
+        <div class="row-tot" style="font-size:1.2em; margin-top:8px">
+          <span>TOTAL</span>
+          <span>$${totals.neto.toLocaleString()}</span>
+        </div>
+      </div>
       <div class="footer"><p class="note">Este documento NO es válido como comprobante fiscal.</p><p>${footerNote}</p></div></div>
       </body></html>`
 
@@ -210,8 +267,23 @@ export default function VentasPage() {
         unidad: producto?.unidad || '',
         idLote: loteId,
         stockDisponible: stockDisponible, // Guardar stock para validaciones posteriores (por lote si aplica)
+        descuento: 0, // Descuento inicial 0
+        tipoDescuento: 'PERCENT', // 'PERCENT' | 'FIXED'
       }]
     })
+  }
+
+  function toggleDiscountType(index: number) {
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        // Reset discount value to 0 when switching types to avoid confusion (e.g. 50% -> $50 is weird)
+        // or keep it but validate. Let's keep it but re-validate will happen on render/change.
+        // Better UX: reset to 0 or convert? Resetting is safer to avoid huge prices or invalid %.
+        // Let's reset to 0 for safety.
+        return { ...item, tipoDescuento: item.tipoDescuento === 'FIXED' ? 'PERCENT' : 'FIXED', descuento: 0 }
+      }
+      return item
+    }))
   }
 
   function changeCantidad(index: number, delta: number) {
@@ -232,8 +304,20 @@ export default function VentasPage() {
           }
         }
 
-        validateCartItem(i, newCantidad, item.precioUnitario)
+        validateCartItem(i, newCantidad, item.precioUnitario, item.descuento || 0, item.tipoDescuento || 'PERCENT')
         return { ...item, cantidad: newCantidad }
+      }
+      return item
+    }))
+  }
+
+  function changeDiscount(index: number, newDiscountStr: string) {
+    const newDiscount = Number(newDiscountStr)
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        // Allow updating state even if invalid for smooth typing, but validate visuals
+        validateCartItem(i, item.cantidad, item.precioUnitario, newDiscount, item.tipoDescuento || 'PERCENT')
+        return { ...item, descuento: newDiscount }
       }
       return item
     }))
@@ -248,7 +332,7 @@ export default function VentasPage() {
     })
   }
 
-  function validateCartItem(index: number, cantidad: number, precio: number): boolean {
+  function validateCartItem(index: number, cantidad: number, precio: number, descuento: number = 0, tipoDescuento: 'PERCENT' | 'FIXED' = 'PERCENT'): boolean {
     const item = cart[index]
     const errors: Record<number, string> = { ...validationErrors }
 
@@ -262,6 +346,20 @@ export default function VentasPage() {
       errors[index] = 'El precio debe ser mayor a 0'
       setValidationErrors(errors)
       return false
+    }
+
+    if (tipoDescuento === 'PERCENT') {
+      if (descuento < 0 || descuento > 100) {
+        errors[index] = 'Descuento inválido (0-100%)'
+        setValidationErrors(errors)
+        return false
+      }
+    } else {
+      if (descuento < 0 || descuento > precio) {
+        errors[index] = `Descuento inválido (máx $${precio})`
+        setValidationErrors(errors)
+        return false
+      }
     }
 
     // Validar stock disponible
@@ -288,7 +386,7 @@ export default function VentasPage() {
     const cantidadNum = Number(editCantidad)
     const precioNum = Number(editPrecio)
 
-    if (!validateCartItem(editingItem, cantidadNum, precioNum)) {
+    if (!validateCartItem(editingItem, cantidadNum, precioNum, cart[editingItem].descuento || 0, cart[editingItem].tipoDescuento || 'PERCENT')) {
       showNotification('error', 'Valores inválidos')
       return
     }
@@ -307,8 +405,35 @@ export default function VentasPage() {
     setEditingItem(null)
   }
 
+  function calcularTotales() {
+    return cart.reduce((acc, it) => {
+      const price = it.precioUnitario
+      const qty = it.cantidad
+      const gross = price * qty
+
+      const discount = it.descuento || 0
+      const tipo = it.tipoDescuento || 'PERCENT'
+
+      let netPrice = price
+      if (tipo === 'FIXED') {
+        netPrice = Math.max(0, price - discount)
+      } else {
+        netPrice = Math.round(price * (1 - discount / 100))
+      }
+
+      const net = netPrice * qty
+      const discountAmount = gross - net
+
+      return {
+        bruto: acc.bruto + gross,
+        descuento: acc.descuento + discountAmount,
+        neto: acc.neto + net
+      }
+    }, { bruto: 0, descuento: 0, neto: 0 })
+  }
+
   function calcularSubtotal() {
-    return cart.reduce((acc, it) => acc + (it.precioUnitario * it.cantidad), 0)
+    return calcularTotales().neto
   }
 
   async function handleAdvancedSearch() {
@@ -389,9 +514,10 @@ export default function VentasPage() {
     }
 
     // Validar todos los items
+    // Validar todos los items
     let hasErrors = false
     cart.forEach((item, index) => {
-      if (!validateCartItem(index, item.cantidad, item.precioUnitario)) {
+      if (!validateCartItem(index, item.cantidad, item.precioUnitario, item.descuento || 0, item.tipoDescuento || 'PERCENT')) {
         hasErrors = true
       }
     })
@@ -465,12 +591,24 @@ export default function VentasPage() {
       fiado: esFiado,
       clienteId: clienteId || null,
       fechaVencimientoPago: fechaVencimientoPago || null,
-      detalles: cart.map((it: any) => ({
-        productoId: Number(it.productoId),
-        cantidad: Math.round(Number(it.cantidad)),
-        precioUnitario: Math.round(Number(it.precioUnitario)),
-        idLote: it.idLote == null ? null : Number(it.idLote),
-      }))
+      detalles: cart.map((it: any) => {
+        const discount = it.descuento || 0
+        const tipo = it.tipoDescuento || 'PERCENT'
+        let precioConDescuento = it.precioUnitario
+
+        if (tipo === 'FIXED') {
+          precioConDescuento = Math.max(0, it.precioUnitario - discount)
+        } else {
+          precioConDescuento = Math.round(it.precioUnitario * (1 - discount / 100))
+        }
+
+        return {
+          productoId: Number(it.productoId),
+          cantidad: Math.round(Number(it.cantidad)),
+          precioUnitario: precioConDescuento,
+          idLote: it.idLote == null ? null : Number(it.idLote),
+        }
+      })
     }
 
     // Agregar datos del cliente si están disponibles
@@ -759,9 +897,19 @@ export default function VentasPage() {
                                   ${item.precioUnitario.toLocaleString()} × {item.cantidad}
                                 </p>
                               </div>
-                              <p className="text-xl font-bold text-green-600">
-                                ${(item.precioUnitario * item.cantidad).toLocaleString()}
-                              </p>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-green-600">
+                                  ${((item.tipoDescuento === 'FIXED'
+                                    ? Math.max(0, item.precioUnitario - (item.descuento || 0))
+                                    : Math.round(item.precioUnitario * (1 - (item.descuento || 0) / 100))
+                                  ) * item.cantidad).toLocaleString()}
+                                </p>
+                                {item.descuento > 0 && (
+                                  <p className="text-xs text-gray-400 line-through">
+                                    ${(item.precioUnitario * item.cantidad).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
                             {validationErrors[index] && (
@@ -786,7 +934,71 @@ export default function VentasPage() {
                                   +
                                 </button>
                               </div>
+
+                              <div className="flex items-center border-2 border-gray-300 rounded-lg ml-2 overflow-hidden bg-white shadow-sm h-10" title="Tipo de Descuento">
+                                <div className="flex border-r-2 border-gray-300 h-full">
+                                  <button
+                                    onClick={() => item.tipoDescuento !== 'PERCENT' && toggleDiscountType(index)}
+                                    className={`w-10 h-full flex items-center justify-center transition-all ${item.tipoDescuento === 'PERCENT'
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      }`}
+                                    title="Porcentaje (%)"
+                                  >
+                                    <Percent className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                  <button
+                                    onClick={() => item.tipoDescuento !== 'FIXED' && toggleDiscountType(index)}
+                                    className={`w-10 h-full flex items-center justify-center transition-all ${item.tipoDescuento === 'FIXED'
+                                      ? 'bg-green-600 text-white'
+                                      : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      }`}
+                                    title="Monto ($)"
+                                  >
+                                    <DollarSign className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                </div>
+
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={item.tipoDescuento === 'PERCENT' ? "100" : undefined}
+                                  className="w-20 text-center font-bold text-gray-800 focus:outline-none px-1 text-xl h-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  placeholder="0"
+                                  value={item.descuento || ''}
+                                  onChange={(e) => changeDiscount(index, e.target.value)}
+                                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                                />
+
+                                <div className="flex flex-col border-l-2 border-gray-300 h-full w-8">
+                                  <button
+                                    onClick={() => {
+                                      const current = Number(item.descuento || 0)
+                                      const step = 1
+                                      let next = current + step
+                                      if (item.tipoDescuento === 'PERCENT' && next > 100) next = 100
+                                      changeDiscount(index, String(next))
+                                    }}
+                                    className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 border-b border-gray-200 active:bg-gray-200 transition-colors"
+                                  >
+                                    <ChevronUp className="w-3 h-3" strokeWidth={3} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const current = Number(item.descuento || 0)
+                                      const step = 1
+                                      const next = Math.max(0, current - step)
+                                      changeDiscount(index, String(next))
+                                    }}
+                                    className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 active:bg-gray-200 transition-colors"
+                                  >
+                                    <ChevronDown className="w-3 h-3" strokeWidth={3} />
+                                  </button>
+                                </div>
+                              </div>
+
                               <button
+
                                 onClick={() => startEditingItem(index)}
                                 className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center gap-1"
                                 title="Editar producto"
@@ -814,15 +1026,21 @@ export default function VentasPage() {
               {/* Totales */}
               {cart.length > 0 && (
                 <div className="border-t-2 border-gray-300 pt-4 space-y-3">
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-700">Subtotal:</span>
-                    <span className="font-semibold text-gray-800">${calcularSubtotal().toLocaleString()}</span>
+                  <div className="flex justify-between text-lg text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>${calcularTotales().bruto.toLocaleString()}</span>
                   </div>
+                  {calcularTotales().descuento > 0 && (
+                    <div className="flex justify-between text-lg text-red-500 font-medium">
+                      <span>Descuentos:</span>
+                      <span>-${calcularTotales().descuento.toLocaleString()}</span>
+                    </div>
+                  )}
                   {/* IVA row removed (was showing $0) */}
                   <div className="flex justify-between text-2xl border-t-2 border-gray-300 pt-3">
                     <span className="font-bold text-gray-900">TOTAL:</span>
                     <span className="font-bold text-green-600">
-                      ${(calcularSubtotal() + calcularIVA(calcularSubtotal())).toLocaleString()}
+                      ${calcularTotales().neto.toLocaleString()}
                     </span>
                   </div>
 

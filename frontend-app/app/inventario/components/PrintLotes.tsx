@@ -48,13 +48,14 @@ export async function buildLabelsHtml(lotes: any[], product: any) {
             body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; width: 100%; height: 100%; }
             .label { 
               width: 100%; 
-              height: 100vh; 
+              height: auto; /* Changed from 100vh to prevent overflow on some drivers */
+              min-height: 80%; /* Optional: ensures some body if needed, but not forcing overflow */
               box-sizing: border-box; 
               border: 1px solid #eee; 
               padding: 6px; 
               display: flex; 
               flex-direction: column; 
-              justify-content: flex-start; /* Changed from space-between to group content */
+              justify-content: flex-start; 
               gap: 4mm;
               page-break-after: always;
               overflow: hidden;

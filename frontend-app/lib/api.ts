@@ -21,7 +21,20 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   })
 
   if (!res.ok) {
-    throw new Error('Credenciales inválidas, intentelo nuevamente')
+    let errorMessage = 'Error al iniciar sesión'
+    try {
+      const errorData = await res.json()
+      errorMessage = errorData.message || errorData.error || errorMessage
+    } catch (e) {
+      const errorText = await res.text()
+      if (errorText) errorMessage = errorText
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(errorMessage !== 'Error al iniciar sesión' ? errorMessage : 'Credenciales inválidas, inténtelo nuevamente')
+    }
+
+    throw new Error(`Error ${res.status}: ${errorMessage}`)
   }
 
   const data = await res.json()
@@ -55,7 +68,7 @@ export async function register(payload: RegisterPayload): Promise<LoginResponse>
 
 function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const headers: Record<string,string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
   return headers
 }
@@ -96,7 +109,7 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
 
       if (isTokenExpired) {
         try {
-          toast({ title: 'Sesión expirada', description: 'Redirigiendo a inicio de sesión...' , variant: 'destructive' })
+          toast({ title: 'Sesión expirada', description: 'Redirigiendo a inicio de sesión...', variant: 'destructive' })
         } catch (e) { console.debug('toast error', e) }
         // Clear auth and redirect to login after a short delay so toast is visible
         try {
@@ -136,7 +149,7 @@ async function fetchWithAuth(input: string, init?: RequestInit) {
           toast({ title: `Acceso denegado (${res.status})`, description: message, variant: 'destructive' })
         } catch (e) { console.debug('toast error', e) }
       }
-  } catch (e) { console.debug('[API] toast import/display error', e) }
+    } catch (e) { console.debug('[API] toast import/display error', e) }
     throw new Error(text || `HTTP error ${res.status}`)
   }
   return res.json().catch(() => null)
