@@ -229,7 +229,15 @@ export async function getProductosSortedByPrice(asc: boolean = true) {
 }
 
 export async function getCategorias() {
-  return fetchWithAuth(`${API_BASE}/api/categorias`)
+  const data = await fetchWithAuth(`${API_BASE}/api/categorias`)
+  if (Array.isArray(data)) {
+    return data.sort((a: any, b: any) => {
+      const na = (a.nombre || '').toLowerCase()
+      const nb = (b.nombre || '').toLowerCase()
+      return na.localeCompare(nb)
+    })
+  }
+  return data
 }
 
 export async function createCategoria(categoria: { nombre: string }) {

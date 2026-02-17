@@ -56,8 +56,8 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <Image src="/logo.png" alt="logo" width={48} height={48} />
           <div>
-            <div className="text-base font-bold">MSM</div>
-            <div className="text-sm text-muted-foreground">Mil Sabores Manager</div>
+            <div className="text-base font-bold">OLM</div>
+            <div className="text-sm text-muted-foreground">OyL Manager</div>
           </div>
         </div>
 
@@ -113,12 +113,12 @@ export default function Navbar() {
 
         {/* Acciones a la derecha */}
         <div className="flex items-center gap-4">
-          
+
           <StockAlert />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
-                <User className="w-5 h-5"/>
+                <User className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -128,7 +128,7 @@ export default function Navbar() {
                 <User className="w-4 h-4 mr-2" />
                 Mi cuenta
               </DropdownMenuItem>
-              
+
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
                 <LogOut className="w-4 h-4 mr-2" />

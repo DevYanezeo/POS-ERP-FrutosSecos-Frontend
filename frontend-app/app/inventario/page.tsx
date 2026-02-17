@@ -165,12 +165,7 @@ export default function InventarioPage() {
     const loadCategorias = async () => {
       try {
         const data = await getCategorias()
-        const categoriasOrdenadas = (data || []).sort((a: any, b: any) => {
-          const nombreA = (a.nombre || '').toLowerCase()
-          const nombreB = (b.nombre || '').toLowerCase()
-          return nombreA.localeCompare(nombreB)
-        })
-        setCategorias(categoriasOrdenadas)
+        setCategorias(data || [])
       } catch (e: any) {
         console.error('Error cargando categorías:', e?.message)
       }
@@ -542,7 +537,7 @@ export default function InventarioPage() {
             {/* Category Filter */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-[#2E2A26] block">Categoría</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-2">
                 {[{ nombre: '' }, ...categorias].map((cat) => (
                   <button
                     key={cat.nombre || cat.idCategoria || cat}

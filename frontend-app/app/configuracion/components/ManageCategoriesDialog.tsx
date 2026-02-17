@@ -87,14 +87,21 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
         }
     }
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar esta categoría?')) return
+    const [confirmDelete, setConfirmDelete] = useState<{ id: number, name: string } | null>(null)
 
-        setDeleting(id)
+    const handleDeleteClick = (cat: any) => {
+        setConfirmDelete({ id: cat.idCategoria, name: cat.nombre })
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!confirmDelete) return
+
+        setDeleting(confirmDelete.id)
         try {
-            await deleteCategoria(id)
+            await deleteCategoria(confirmDelete.id)
             toast({ title: 'Categoría eliminada', description: 'La categoría se ha eliminado correctamente.', variant: 'success' })
             fetchCategorias()
+            setConfirmDelete(null)
         } catch (e: any) {
             console.error(e)
             toast({ title: 'Error', description: 'No se pudo eliminar la categoría.', variant: 'destructive' })
@@ -104,101 +111,136 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: { open: b
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Tag className="w-5 h-5 text-[#A0522D]" />
-                        Gestionar Categorías
-                    </DialogTitle>
-                    <DialogDescription>
-                        Agrega o visualiza las categorías de productos disponibles.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Tag className="w-5 h-5 text-[#A0522D]" />
+                            Gestionar Categorías
+                        </DialogTitle>
+                        <DialogDescription>
+                            Agrega o visualiza las categorías de productos disponibles.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="space-y-4 my-2">
-                    <div className="flex gap-2">
-                        <input
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="Nueva categoría..."
-                            className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:border-[#A0522D]"
-                            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                        />
+                    <div className="space-y-4 my-2">
+                        <div className="flex gap-2">
+                            <input
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                placeholder="Nueva categoría..."
+                                className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:border-[#A0522D]"
+                                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                            />
+                            <button
+                                onClick={handleCreate}
+                                disabled={creating || !newCategoryName.trim()}
+                                className="px-3 py-2 bg-[#A0522D] text-white rounded-md hover:bg-[#8B5E3C] disabled:opacity-50 transition-colors"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="border rounded-md max-h-60 overflow-y-auto bg-gray-50 p-2 space-y-2">
+                            {loading ? (
+                                <div className="text-center text-sm text-gray-500 py-4">Cargando...</div>
+                            ) : categorias.length === 0 ? (
+                                <div className="text-center text-sm text-gray-500 py-4">No hay categorías registradas.</div>
+                            ) : (
+                                categorias.map((cat, idx) => (
+                                    <div key={cat.idCategoria || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm gap-2">
+                                        {editingId === cat.idCategoria ? (
+                                            <>
+                                                <input
+                                                    value={editingName}
+                                                    onChange={(e) => setEditingName(e.target.value)}
+                                                    className="flex-1 px-2 py-1 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={handleUpdate}
+                                                    disabled={updating || !editingName.trim()}
+                                                    className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                                    title="Guardar"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+                                                    title="Cancelar"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="flex-1 font-medium text-gray-700">{cat.nombre || '-'}</span>
+                                                <button
+                                                    onClick={() => handleStartEdit(cat)}
+                                                    className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(cat)}
+                                                    disabled={deleting === cat.idCategoria}
+                                                    className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <DialogClose className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700 font-medium">
+                            Cerrar
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Eliminar Categoría</DialogTitle>
+                        <DialogDescription>
+                            ¿Estás seguro de que deseas eliminar esta categoría?
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="bg-[#FEF2F2] p-4 rounded border border-[#FCA5A5] my-2">
+                        <div className="font-semibold text-[#2E2A26] text-center">
+                            {confirmDelete?.name}
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
                         <button
-                            onClick={handleCreate}
-                            disabled={creating || !newCategoryName.trim()}
-                            className="px-3 py-2 bg-[#A0522D] text-white rounded-md hover:bg-[#8B5E3C] disabled:opacity-50 transition-colors"
+                            onClick={() => setConfirmDelete(null)}
+                            className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium w-full sm:w-auto"
                         >
-                            <Plus className="w-5 h-5" />
+                            Cancelar
                         </button>
-                    </div>
-
-                    <div className="border rounded-md max-h-60 overflow-y-auto bg-gray-50 p-2 space-y-2">
-                        {loading ? (
-                            <div className="text-center text-sm text-gray-500 py-4">Cargando...</div>
-                        ) : categorias.length === 0 ? (
-                            <div className="text-center text-sm text-gray-500 py-4">No hay categorías registradas.</div>
-                        ) : (
-                            categorias.map((cat, idx) => (
-                                <div key={cat.idCategoria || idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm gap-2">
-                                    {editingId === cat.idCategoria ? (
-                                        <>
-                                            <input
-                                                value={editingName}
-                                                onChange={(e) => setEditingName(e.target.value)}
-                                                className="flex-1 px-2 py-1 border rounded text-sm focus:outline-none focus:border-[#A0522D]"
-                                                onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
-                                                autoFocus
-                                            />
-                                            <button
-                                                onClick={handleUpdate}
-                                                disabled={updating || !editingName.trim()}
-                                                className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
-                                                title="Guardar"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={handleCancelEdit}
-                                                className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
-                                                title="Cancelar"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="flex-1 font-medium text-gray-700">{cat.nombre || '-'}</span>
-                                            <button
-                                                onClick={() => handleStartEdit(cat)}
-                                                className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                                title="Editar"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(cat.idCategoria)}
-                                                disabled={deleting === cat.idCategoria}
-                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <DialogClose className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700 font-medium">
-                        Cerrar
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                        <button
+                            disabled={deleting !== null}
+                            onClick={handleConfirmDelete}
+                            className="px-3 py-2 bg-[#991B1B] hover:bg-[#7F1D1D] text-white rounded text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
+                        >
+                            {deleting ? 'Eliminando...' : 'Eliminar'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     )
 }

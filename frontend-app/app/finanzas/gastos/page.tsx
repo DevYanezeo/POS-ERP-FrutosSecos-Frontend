@@ -9,11 +9,23 @@ import { listarGastos, eliminarGasto, Gasto } from "@/lib/gastos"
 import CreateGastoModal from "@/app/finanzas/gastos/components/CreateGastoModal"
 import { toast } from "sonner"
 
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+} from '@/components/ui/dialog'
+
 export default function GastosPage() {
     const router = useRouter()
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [gastoToDelete, setGastoToDelete] = useState<Gasto | null>(null)
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         cargarGastos()
@@ -34,15 +46,23 @@ export default function GastosPage() {
         }
     }
 
-    async function handleDelete(id: number) {
-        if (!confirm('¿Estás seguro de eliminar este gasto?')) return
+    const handleDeleteClick = (gasto: Gasto) => {
+        setGastoToDelete(gasto)
+    }
 
+    const handleConfirmDelete = async () => {
+        if (!gastoToDelete?.idGasto) return
+
+        setDeleting(true)
         try {
-            await eliminarGasto(id)
-            setGastos(gastos.filter(g => g.idGasto !== id))
+            await eliminarGasto(gastoToDelete.idGasto)
+            setGastos(gastos.filter(g => g.idGasto !== gastoToDelete.idGasto))
             toast.success("Gasto eliminado correctamente")
+            setGastoToDelete(null)
         } catch (error) {
             toast.error("Error al eliminar gasto")
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -126,9 +146,9 @@ export default function GastosPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${gasto.tipo === 'INGRESO' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                        gasto.tipo === 'OPERACIONAL' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                            gasto.tipo === 'ADQUISICION' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                                'bg-gray-50 text-gray-700 border-gray-100'
+                                                    gasto.tipo === 'OPERACIONAL' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                        gasto.tipo === 'ADQUISICION' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                            'bg-gray-50 text-gray-700 border-gray-100'
                                                     }`}>
                                                     {gasto.tipo}
                                                 </span>
@@ -138,7 +158,7 @@ export default function GastosPage() {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <button
-                                                    onClick={() => handleDelete(gasto.idGasto!)}
+                                                    onClick={() => handleDeleteClick(gasto)}
                                                     className="text-gray-400 hover:text-red-600 transition-colors"
                                                     title="Eliminar"
                                                 >
@@ -161,6 +181,43 @@ export default function GastosPage() {
                         cargarGastos();
                     }}
                 />
+
+                <Dialog open={!!gastoToDelete} onOpenChange={(open) => !open && setGastoToDelete(null)}>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle>Eliminar Registro</DialogTitle>
+                            <DialogDescription>
+                                ¿Estás seguro de que deseas eliminar este registro?
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="bg-[#FEF2F2] p-4 rounded border border-[#FCA5A5] my-2">
+                            <div className="font-semibold text-[#2E2A26] text-center">
+                                {gastoToDelete?.descripcion}
+                            </div>
+                            <div className={`mt-1 text-center font-bold ${gastoToDelete?.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'}`}>
+                                {gastoToDelete && (gastoToDelete.tipo === 'INGRESO' ? '+' : '-')}
+                                ${gastoToDelete?.monto.toLocaleString()}
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <button
+                                onClick={() => setGastoToDelete(null)}
+                                className="px-3 py-2 bg-[#F5EDE4] hover:bg-[#E5DDD4] border border-[#D4A373] rounded text-[#7A6F66] text-sm font-medium w-full sm:w-auto"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                disabled={deleting}
+                                onClick={handleConfirmDelete}
+                                className="px-3 py-2 bg-[#991B1B] hover:bg-[#7F1D1D] text-white rounded text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
+                            >
+                                {deleting ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </main>
     )

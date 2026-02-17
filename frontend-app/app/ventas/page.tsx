@@ -7,7 +7,7 @@ import { confirmarVenta } from '@/lib/ventas'
 import { buscarOCrearCliente } from '@/lib/clientesFiado'
 import { useRouter } from 'next/navigation'
 import ScanProductoInput from './components/ScanProductoInput'
-import { Loader2, ShoppingCart, Edit2, Trash2, Percent, DollarSign, ChevronUp, ChevronDown } from 'lucide-react'
+import { Loader2, ShoppingCart, Edit2, Trash2, Percent, DollarSign, ChevronUp, ChevronDown, Cat } from 'lucide-react'
 
 function calcularIVA(subtotal: number) {
   // IVA removed per client request: always 0
@@ -15,9 +15,9 @@ function calcularIVA(subtotal: number) {
 }
 
 // Generate printable boleta (opens print dialog). Uses /logo.png from public.
-function generarBoletaVenta(cart: any[], saleId?: any) {
+function generarBoletaVenta(cart: any[], saleId?: any, globalDiscount: number = 0) {
   try {
-    const totals = cart.reduce((acc, it) => {
+    const itemTotals = cart.reduce((acc, it) => {
       const price = Number(it.precioUnitario)
       const qty = Number(it.cantidad)
       const gross = price * qty
@@ -42,7 +42,16 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       }
     }, { bruto: 0, descuento: 0, neto: 0 })
 
+    // Apply global discount
+    const finalTotal = Math.max(0, itemTotals.neto - globalDiscount)
+    const totals = {
+      bruto: itemTotals.bruto,
+      descuento: itemTotals.descuento + globalDiscount,
+      neto: finalTotal
+    }
+
     const logoUrl = '/logo.png'
+
     const title = 'COMPROBANTE DE PRODUCTOS'
     const footerNote = `Documento no válido como boleta`
 
@@ -78,7 +87,7 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
       <style>
         body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:5px;color:#000}
         .receipt{width:100%;margin:0 auto}
-        .logo{width:90px;max-width:100%;margin:0 auto;display:block;filter:grayscale(100%)}
+        .logo{width:90px;max-width:100%;margin:0 auto;display:block;filter:grayscale(100%) brightness(70%) contrast(150%)}
         h1{font-size:14px;text-align:center;margin:8px 0}
         table{width:100%;font-size:13px;border-collapse:collapse}
         td{padding:6px 4px;vertical-align:top}
@@ -106,6 +115,7 @@ function generarBoletaVenta(cart: any[], saleId?: any) {
         <div class="row-tot" style="color:#000; font-weight:normal;">
           <span>DESCUENTOS</span>
           <span>-$${totals.descuento.toLocaleString()}</span>
+          ${globalDiscount > 0 ? `<br/><small>(Incluye descuento global: $${globalDiscount.toLocaleString()})</small>` : ''}
         </div>` : ''}
         <div class="row-tot" style="font-size:1.2em; margin-top:8px">
           <span>TOTAL</span>
@@ -179,6 +189,8 @@ export default function VentasPage() {
   const [clienteEmail, setClienteEmail] = useState('')
   const [clienteRut, setClienteRut] = useState('')
   const [fechaVencimiento, setFechaVencimiento] = useState('')
+  const [globalDiscount, setGlobalDiscount] = useState<string>('0')
+  const [globalDiscountType, setGlobalDiscountType] = useState<'PERCENT' | 'FIXED'>('FIXED')
 
   useEffect(() => {
     fetchProductos()
@@ -406,7 +418,7 @@ export default function VentasPage() {
   }
 
   function calcularTotales() {
-    return cart.reduce((acc, it) => {
+    const itemTotals = cart.reduce((acc, it) => {
       const price = it.precioUnitario
       const qty = it.cantidad
       const gross = price * qty
@@ -430,6 +442,27 @@ export default function VentasPage() {
         neto: acc.neto + net
       }
     }, { bruto: 0, descuento: 0, neto: 0 })
+
+    // Apply global discount
+    const gDiscountValue = Number(globalDiscount) || 0
+    let gDiscountAmount = 0
+
+    if (globalDiscountType === 'PERCENT') {
+      const safePercent = Math.min(Math.max(gDiscountValue, 0), 100)
+      gDiscountAmount = Math.round(itemTotals.neto * (safePercent / 100))
+    } else {
+      gDiscountAmount = gDiscountValue
+    }
+
+    // Global discount is applied to the net total of items
+    const finalTotal = Math.max(0, itemTotals.neto - gDiscountAmount)
+
+    return {
+      bruto: itemTotals.bruto,
+      descuento: itemTotals.descuento + gDiscountAmount,
+      neto: finalTotal,
+      globalDiscountAmount: gDiscountAmount
+    }
   }
 
   function calcularSubtotal() {
@@ -588,6 +621,8 @@ export default function VentasPage() {
       subtotal: Math.round(Number(subtotal)),
       iva: 0,
       total: Math.round(Number(total)),
+
+      descuentoGlobal: Math.round(Number(calcularTotales().globalDiscountAmount)), // Send calculated amount
       fiado: esFiado,
       clienteId: clienteId || null,
       fechaVencimientoPago: fechaVencimientoPago || null,
@@ -623,8 +658,9 @@ export default function VentasPage() {
       const res = await confirmarVenta(payload)
       showNotification('success', `Venta confirmada exitosamente. ID: ${res?.idVenta || '---'}`)
       // Generate and trigger boleta print immediately
-      try { generarBoletaVenta(cart, res?.idVenta) } catch (e) { console.error('Error al generar boleta', e) }
+      try { generarBoletaVenta(cart, res?.idVenta, Number(calcularTotales().globalDiscountAmount) || 0) } catch (e) { console.error('Error al generar boleta', e) }
       setCart([])
+      setGlobalDiscount('0')
 
       // Opcional: redirigir o mostrar recibo
       setTimeout(() => {
@@ -1030,12 +1066,90 @@ export default function VentasPage() {
                     <span>Subtotal:</span>
                     <span>${calcularTotales().bruto.toLocaleString()}</span>
                   </div>
-                  {calcularTotales().descuento > 0 && (
+                  {/* {calcularTotales().descuento > 0 && (
                     <div className="flex justify-between text-lg text-red-500 font-medium">
                       <span>Descuentos:</span>
                       <span>-${calcularTotales().descuento.toLocaleString()}</span>
                     </div>
-                  )}
+                  )} */}
+                  {/* Descuento Global Input */}
+                  <div className="flex justify-between items-center text-lg text-gray-600 py-1">
+                    <span className="flex items-center gap-2">
+                      Descuento:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm h-10">
+                        <div className="flex border-r-2 border-gray-300 h-full">
+                          <button
+                            onClick={() => {
+                              if (globalDiscountType !== 'PERCENT') {
+                                setGlobalDiscountType('PERCENT')
+                                setGlobalDiscount('0')
+                              }
+                            }}
+                            className={`w-10 h-full flex items-center justify-center transition-all ${globalDiscountType === 'PERCENT'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                            title="Porcentaje (%)"
+                          >
+                            <Percent className="w-4 h-4" strokeWidth={2.5} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (globalDiscountType !== 'FIXED') {
+                                setGlobalDiscountType('FIXED')
+                                setGlobalDiscount('0')
+                              }
+                            }}
+                            className={`w-10 h-full flex items-center justify-center transition-all ${globalDiscountType === 'FIXED'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                            title="Monto ($)"
+                          >
+                            <DollarSign className="w-4 h-4" strokeWidth={2.5} />
+                          </button>
+                        </div>
+
+                        <input
+                          type="number"
+                          min="0"
+                          max={globalDiscountType === 'PERCENT' ? "100" : undefined}
+                          className="w-24 text-center font-bold text-gray-800 focus:outline-none px-1 text-xl h-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          placeholder="0"
+                          value={globalDiscount}
+                          onChange={(e) => setGlobalDiscount(e.target.value)}
+                          onClick={(e) => (e.target as HTMLInputElement).select()}
+                        />
+
+                        <div className="flex flex-col border-l-2 border-gray-300 h-full w-8">
+                          <button
+                            onClick={() => {
+                              const current = Number(globalDiscount || 0)
+                              const step = 1
+                              let next = current + step
+                              if (globalDiscountType === 'PERCENT' && next > 100) next = 100
+                              setGlobalDiscount(String(next))
+                            }}
+                            className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 border-b border-gray-200 active:bg-gray-200 transition-colors"
+                          >
+                            <ChevronUp className="w-3 h-3" strokeWidth={3} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const current = Number(globalDiscount || 0)
+                              const step = 1
+                              const next = Math.max(0, current - step)
+                              setGlobalDiscount(String(next))
+                            }}
+                            className="h-1/2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 active:bg-gray-200 transition-colors"
+                          >
+                            <ChevronDown className="w-3 h-3" strokeWidth={3} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* IVA row removed (was showing $0) */}
                   <div className="flex justify-between text-2xl border-t-2 border-gray-300 pt-3">
                     <span className="font-bold text-gray-900">TOTAL:</span>
